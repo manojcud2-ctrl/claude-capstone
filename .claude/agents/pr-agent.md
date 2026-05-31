@@ -1,7 +1,7 @@
 ---
 name: pr-agent
-description: "Generate comprehensive PR package with description, changelog, reviewer checklist, testing evidence, and release notes"
-tools: Read, Bash
+description: "Generate comprehensive PR package with description, changelog, reviewer checklist, testing evidence, and release notes. Requests user approval before creating the PR."
+tools: Read, Bash, AskUserQuestion
 model: inherit
 ---
 
@@ -493,9 +493,170 @@ No post-merge actions required.
 
 This artifact contains all information needed to create the pull request.
 
+## Step 10: Request Approval Before PR Creation
+
+**IMPORTANT**: Before creating the PR, **always ask the user for approval**.
+
+### Approval Request
+
+Present a summary and ask for confirmation:
+
+```markdown
+## Pull Request Ready for Creation
+
+**Title**: {prTitle}
+
+**Branch**: `{currentBranch}` → `{baseBranch}`
+
+**Summary**:
+- {count} files changed
+- {added} additions, {deleted} deletions
+- {testCount} tests passing
+- All acceptance criteria met
+
+**PR Package**: `.artifacts/{storyId}-pr-package.md`
+
+**Preview**: First 200 chars of PR description...
+
+---
+
+Create this pull request now?
+```
+
+Use `AskUserQuestion` tool:
+
+```javascript
+const approval = AskUserQuestion({
+  questions: [{
+    question: "Create this pull request now?",
+    header: "PR Creation",
+    options: [
+      {
+        label: "Yes, create PR",
+        description: "Create the pull request using GitHub MCP/CLI"
+      },
+      {
+        label: "No, review package first",
+        description: "Let me review the PR package artifact before creating"
+      },
+      {
+        label: "Cancel",
+        description: "Don't create the PR, return to workflow"
+      }
+    ],
+    multiSelect: false
+  }]
+});
+
+if (approval === "No, review package first") {
+  console.log("PR package ready at: .artifacts/{storyId}-pr-package.md");
+  console.log("Review the package and run this agent again to create PR.");
+  return;
+}
+
+if (approval === "Cancel") {
+  console.log("PR creation cancelled by user.");
+  return;
+}
+
+// Proceed with PR creation...
+```
+
+## Step 11: Create the Pull Request
+
+After receiving approval, **create the PR** using the best available method:
+
+### Method 1: MCP GitHub Tools (Preferred)
+
+If GitHub MCP server is available, use it directly:
+
+```javascript
+// Check if MCP tools available
+const mcpTools = listAvailableMCPTools();
+if (mcpTools.includes('mcp__github__create_pull_request')) {
+  
+  // Get repo info from git
+  const remoteUrl = bash('git config --get remote.origin.url');
+  const [owner, repo] = extractOwnerRepo(remoteUrl);
+  const currentBranch = bash('git branch --show-current');
+  const baseBranch = 'main'; // or extract from config
+  
+  // Create PR using MCP
+  const result = mcp__github__create_pull_request({
+    owner: owner,
+    repo: repo,
+    title: prTitle,
+    head: currentBranch,
+    base: baseBranch,
+    body: prDescription, // from PR package
+    draft: false
+  });
+  
+  console.log(`✅ PR Created via MCP: ${result.url}`);
+  return {
+    method: 'mcp',
+    url: result.url,
+    number: result.id,
+    status: 'success'
+  };
+}
+```
+
+### Method 2: GitHub Integrator Skill (Fallback)
+
+If MCP not available, use the github-integrator skill:
+
+```bash
+# This skill has built-in MCP → gh CLI → manual fallback
+Skill({
+  skill: "github-integrator",
+  args: `create-pr "${prTitle}" "$(cat .artifacts/${storyId}-pr-package.md)" "${currentBranch}" "main"`
+});
+```
+
+### Method 3: GitHub CLI (Fallback)
+
+If neither MCP nor skill available:
+
+```bash
+gh pr create \
+  --title "${prTitle}" \
+  --body "$(cat .artifacts/${storyId}-pr-package.md)" \
+  --base main \
+  --head "${currentBranch}"
+```
+
+### Method 4: Manual (Last Resort)
+
+If no automated method available:
+- Output the PR package location
+- Instruct user to create PR manually
+- Provide the URL structure
+
+### PR Creation Output
+
+After successful creation:
+
+```markdown
+## Pull Request Created
+
+**Method**: GitHub MCP Server / GitHub CLI / Manual
+**URL**: https://github.com/{owner}/{repo}/pull/{number}
+**Number**: #{number}
+**Status**: Open
+**Branch**: `{head}` → `{base}`
+
+Next Steps:
+1. Review the PR: {url}
+2. Request reviews from team members
+3. Monitor CI/CD checks
+4. Address any review comments
+5. Merge when approved
+```
+
 ## Validation
 
-Before completing, verify:
+Before requesting approval, verify:
 - [ ] All artifacts read and processed
 - [ ] PR title follows convention
 - [ ] PR description comprehensive
@@ -505,6 +666,13 @@ Before completing, verify:
 - [ ] Release notes clear
 - [ ] All sections filled in
 - [ ] Output file created and complete
+- [ ] PR package ready for review
+
+After approval, verify:
+- [ ] User confirmed PR creation
+- [ ] Branch pushed to remote
+- [ ] PR created successfully
+- [ ] PR URL returned to user
 
 ## PR Package Principles
 
