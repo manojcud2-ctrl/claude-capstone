@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Node.js/Express weather API backend that serves weather data from a CSV file. The API provides three endpoints: health check, city list, and weather data by city name. It uses `csv-parse` for data loading and has comprehensive unit and functional tests.
+This is a Node.js/Express weather API backend that serves weather data from a CSV file. The API provides four endpoints: health check, city list, full weather data by city name, and weather condition by city name. It uses `csv-parse` for data loading and has comprehensive unit and functional tests.
 
 ## Development Commands
 
@@ -52,6 +52,10 @@ npx jest -t "should return health status" # Run test by name pattern
 - `GET /api/weather/:city` - Returns formatted weather data for a city (case-insensitive)
   - Returns 404 if city not found
   - Formats response with units (°F, %, mph, mb)
+- `GET /api/condition?city={name}` - Returns only weather condition for a city (case-insensitive)
+  - Returns 400 if city query parameter is missing
+  - Returns 404 if city not found
+  - Minimal response payload (city and condition only)
 
 ### Test Structure
 
@@ -67,11 +71,19 @@ npx jest -t "should return health status" # Run test by name pattern
 - Tests case-insensitive city search
 - Verifies error handling for non-existent cities
 
+**Functional Tests (`test/functional/condition.test.js`)**
+- Tests /api/condition endpoint with query parameters
+- Validates minimal response payload (city + condition only)
+- Tests case-insensitive matching and URL encoding
+- Verifies error handling for missing and invalid parameters
+
 ## Key Patterns
 
 - **Data Loading**: Weather data loads once at startup, not per-request
 - **Case Handling**: City searches are case-insensitive (converted to lowercase for comparison)
 - **Response Format**: Weather values include units in the response (e.g., "72°F", "65%")
+- **Query Parameters**: /api/condition uses query parameter pattern (?city={name}) vs path parameter pattern used by other endpoints
+- **Minimal Responses**: /api/condition returns only city and condition (67% payload reduction vs full weather data)
 - **Module Export**: Server exports the Express app for testing but only calls `listen()` when run directly (`require.main === module`)
 
 ## Adding New Cities

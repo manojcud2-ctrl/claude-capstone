@@ -67,6 +67,40 @@ app.get('/api/cities', (req, res) => {
   res.json({ cities });
 });
 
+// Get weather condition by city (query parameter)
+app.get('/api/condition', (req, res) => {
+  // Extract city from query parameter
+  const cityParam = req.query.city;
+
+  // Validate city parameter is provided
+  if (!cityParam) {
+    return res.status(400).json({
+      error: 'Missing parameter',
+      message: 'City name is required as a query parameter',
+    });
+  }
+
+  // Perform case-insensitive city lookup
+  const cityName = cityParam.toLowerCase();
+  const weather = weatherData.find(
+    (w) => w.city.toLowerCase() === cityName
+  );
+
+  // Handle city not found
+  if (!weather) {
+    return res.status(404).json({
+      error: 'City not found',
+      message: `Weather condition for "${cityParam}" is not available`,
+    });
+  }
+
+  // Return minimal response with city and condition only
+  res.json({
+    city: weather.city,
+    condition: weather.condition,
+  });
+});
+
 // Start server only if this file is run directly
 if (require.main === module) {
   app.listen(PORT, () => {
@@ -75,7 +109,9 @@ if (require.main === module) {
     console.log(`  GET /api/health - Health check`);
     console.log(`  GET /api/cities - List all available cities`);
     console.log(`  GET /api/weather/:city - Get weather for a specific city`);
+    console.log(`  GET /api/condition?city={name} - Get weather condition only`);
     console.log(`\nExample: http://localhost:${PORT}/api/weather/New%20York`);
+    console.log(`Example: http://localhost:${PORT}/api/condition?city=Chicago`);
   });
 }
 

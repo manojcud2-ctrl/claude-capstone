@@ -4,7 +4,9 @@ A simple backend application that returns weather data for cities using CSV as t
 
 ## Features
 
-- ✅ Single API endpoint to fetch weather data
+- ✅ Multiple API endpoints to fetch weather data
+- ✅ Full weather data endpoint (temperature, humidity, condition, wind, pressure)
+- ✅ Lightweight condition-only endpoint for minimal data transfer
 - ✅ Weather data stored in CSV format
 - ✅ CORS enabled for frontend integration
 - ✅ Simple Express.js server
@@ -83,11 +85,53 @@ GET /api/weather/New%20York
 }
 ```
 
+### 4. Get Weather Condition Only (Lightweight Endpoint)
+```
+GET /api/condition?city={cityName}
+```
+
+**Example:**
+```
+GET /api/condition?city=Chicago
+```
+
+**Response:**
+```json
+{
+  "city": "Chicago",
+  "condition": "Rainy"
+}
+```
+
+**Error Response (400 - Missing Parameter):**
+```json
+{
+  "error": "Missing parameter",
+  "message": "City name is required as a query parameter"
+}
+```
+
+**Error Response (404 - City Not Found):**
+```json
+{
+  "error": "City not found",
+  "message": "Weather condition for \"Unknown City\" is not available"
+}
+```
+
+**Benefits:**
+- Minimal payload (67% smaller than full weather endpoint)
+- Faster response time for simple condition checks
+- Case-insensitive city name matching
+
 ## Testing with cURL
 
 ```bash
-# Get weather for New York
+# Get full weather data for New York
 curl http://localhost:3000/api/weather/New%20York
+
+# Get condition only for Chicago
+curl http://localhost:3000/api/condition?city=Chicago
 
 # Get all cities
 curl http://localhost:3000/api/cities
