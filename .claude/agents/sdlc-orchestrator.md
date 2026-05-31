@@ -49,7 +49,7 @@ Each stage:
 
 **Process**:
 1. Parse Jira ID
-2. Validate format (e.g., PMX-123, PROJ-456)
+2. Validate format (e.g., WA-123, WA-456)
 3. Check if workflow already exists
 4. Create `.artifacts/` directory if needed
 5. Initialize workflow state file
@@ -100,7 +100,7 @@ Each stage:
 1. Read workflow state
 2. Display visual progress:
    ```
-   Story: PMX-123 - {Title}
+   Story: WA-123 - {Title}
 
    Completed Stages:
    ✅ Requirements
@@ -139,7 +139,7 @@ Each stage:
 ```json
 {
   "version": "1.0",
-  "storyId": "PMX-123",
+  "storyId": "WA-123",
   "storyTitle": "Story Title",
   "storyType": "Feature",
   "currentStage": "Planning",
@@ -148,15 +148,15 @@ Each stage:
   "startedAt": "2026-05-31T10:00:00Z",
   "lastUpdatedAt": "2026-05-31T12:30:00Z",
   "artifacts": {
-    "requirements": ".artifacts/PMX-123-requirements.md",
-    "architecture": ".artifacts/PMX-123-architecture.md",
-    "plan": ".artifacts/PMX-123-implementation-plan.md",
+    "requirements": ".artifacts/WA-123-requirements.md",
+    "architecture": ".artifacts/WA-123-architecture.md",
+    "plan": ".artifacts/WA-123-implementation-plan.md",
     "implementation": null,
     "review": null,
     "verification": null,
     "pr": null
   },
-  "branch": "feature/PMX-123-description"
+  "branch": "feature/WA-123-description"
 }
 ```
 
@@ -191,7 +191,7 @@ Before each operation, verify:
 
 **Action**: Agent Invoked
 **Status**: InProgress
-**Details**: Starting Requirements Agent for story PMX-123
+**Details**: Starting Requirements Agent for story WA-123
 
 ---
 
@@ -199,7 +199,7 @@ Before each operation, verify:
 
 **Action**: Agent Completed
 **Status**: Success
-**Artifact**: .artifacts/PMX-123-requirements.md
+**Artifact**: .artifacts/WA-123-requirements.md
 **Details**: Requirements specification generated
 
 ---
@@ -412,13 +412,13 @@ If validation fails:
 ### Example 1: Start New Story
 
 ```
-User: "start story PMX-123"
+User: "start story WA-123"
 
 Orchestrator:
 1. Creates .artifacts/ directory
 2. Initializes workflow-state.json
 3. Initializes audit-log.md
-4. Fetches PMX-123 from Jira (or asks for details)
+4. Fetches WA-123 from Jira (or asks for details)
 5. Invokes Requirements Agent
 6. Displays requirements summary
 7. Asks: "Approve requirements?"
@@ -431,7 +431,7 @@ User: "approve"
 
 Orchestrator:
 1. Reads workflow-state.json (currentStage: Requirements)
-2. Validates .artifacts/PMX-123-requirements.md exists
+2. Validates .artifacts/WA-123-requirements.md exists
 3. Updates state: approvedStages += Requirements, currentStage = Architecture
 4. Logs approval to audit-log.md
 5. Invokes Architecture Agent
@@ -450,7 +450,7 @@ Orchestrator:
 3. Keeps state in Requirements stage
 4. Displays:
    "Requirements rejected. Options:
-   - Edit .artifacts/PMX-123-requirements.md manually
+   - Edit .artifacts/WA-123-requirements.md manually
    - Say 'retry requirements' to re-run agent
    - Say 'approve' when ready to proceed"
 ```
@@ -464,7 +464,7 @@ Orchestrator:
 1. Reads workflow-state.json
 2. Displays:
    
-   Story: PMX-123 - Add Weather Forecast
+   Story: WA-123 - Add Weather Forecast
    
    ✅ Completed:
    - Requirements
@@ -479,7 +479,7 @@ Orchestrator:
    - Verification
    - PR
    
-   Artifact: .artifacts/PMX-123-implementation-summary.md
+   Artifact: .artifacts/WA-123-implementation-summary.md
    Next Action: Approve or reject implementation
 ```
 

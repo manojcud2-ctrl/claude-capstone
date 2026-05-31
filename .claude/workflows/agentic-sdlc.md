@@ -239,7 +239,7 @@ Tracks:
 ```json
 {
   "version": "1.0",
-  "storyId": "PMX-123",
+  "storyId": "WA-123",
   "storyTitle": "Add weather forecast endpoint",
   "currentStage": "Planning",
   "status": "WaitingForApproval",
@@ -247,9 +247,9 @@ Tracks:
   "startedAt": "2026-05-31T10:00:00Z",
   "lastUpdatedAt": "2026-05-31T12:30:00Z",
   "artifacts": {
-    "requirements": ".artifacts/PMX-123-requirements.md",
-    "architecture": ".artifacts/PMX-123-architecture.md",
-    "plan": ".artifacts/PMX-123-implementation-plan.md"
+    "requirements": ".artifacts/WA-123-requirements.md",
+    "architecture": ".artifacts/WA-123-architecture.md",
+    "plan": ".artifacts/WA-123-implementation-plan.md"
   }
 }
 ```
@@ -269,7 +269,7 @@ Records:
 
 ### Start Workflow
 
-**Usage**: `start story PMX-123`
+**Usage**: `start story WA-123`
 
 **Description**: Initialize workflow for a Jira story
 
@@ -352,7 +352,7 @@ Every stage ends with an approval gate:
 ┌─────────────────────────────────────┐
 │  Stage Complete                      │
 │                                      │
-│  Artifact: .artifacts/PMX-123-*.md   │
+│  Artifact: .artifacts/WA-123-*.md   │
 │                                      │
 │  Summary:                            │
 │  - Key Point 1                       │
@@ -392,13 +392,13 @@ All artifacts stored in `.artifacts/` directory:
 .artifacts/
 ├── workflow-state.json           # Workflow state
 ├── audit-log.md                  # Audit trail
-├── PMX-123-requirements.md       # Stage 1 output
-├── PMX-123-architecture.md       # Stage 2 output
-├── PMX-123-implementation-plan.md   # Stage 3 output
-├── PMX-123-implementation-summary.md # Stage 4 output
-├── PMX-123-review-report.md      # Stage 5 output
-├── PMX-123-verification-report.md   # Stage 6 output
-└── PMX-123-pr-package.md         # Stage 7 output
+├── WA-123-requirements.md       # Stage 1 output
+├── WA-123-architecture.md       # Stage 2 output
+├── WA-123-implementation-plan.md   # Stage 3 output
+├── WA-123-implementation-summary.md # Stage 4 output
+├── WA-123-review-report.md      # Stage 5 output
+├── WA-123-verification-report.md   # Stage 6 output
+└── WA-123-pr-package.md         # Stage 7 output
 ```
 
 Each artifact:
@@ -528,7 +528,7 @@ User → Orchestrator → Agent → Artifact → Orchestrator → User
 ### Complete Flow
 
 ```
-User: "start story PMX-123"
+User: "start story WA-123"
 
 [Requirements Agent runs]
 Orchestrator: "Requirements complete. Approve?"

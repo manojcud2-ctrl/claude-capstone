@@ -66,7 +66,7 @@ Format: `{Type}: {Brief Description} ({Story ID})`
 - `perf` - Performance improvements
 - `chore` - Maintenance tasks
 
-**Example**: `feat: Add weather forecast endpoint (PMX-123)`
+**Example**: `feat: Add weather forecast endpoint (WA-123)`
 
 ### Step 4: Generate PR Description
 

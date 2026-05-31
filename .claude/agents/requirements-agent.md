@@ -13,7 +13,7 @@ Extract and document comprehensive requirements from Jira stories to create a de
 
 ## Input
 
-- **Jira Story ID** (e.g., PMX-123)
+- **Jira Story ID** (e.g., WA-123)
 - **Jira Story Details** (title, description, acceptance criteria, comments)
 
 ## Responsibilities
@@ -31,15 +31,24 @@ Extract and document comprehensive requirements from Jira stories to create a de
 
 ### Step 1: Fetch Jira Story
 
-If Jira MCP is available:
+Use the **jira-integrator** skill to fetch story details:
+
 ```bash
-# Use Jira API to fetch story details
+# Fetch story using jira-integrator skill
+jira-integrator get-issue-expanded ${STORY_ID}
 ```
 
-If using manual input or GitHub-integrated Jira:
-```bash
-# Parse story from provided details or gh api
-```
+The skill will return a JSON response. Parse it to extract:
+- **Story summary** - `fields.summary` (title)
+- **Story description** - `fields.description.content` (parse ADF format)
+- **Status** - `fields.status.name`
+- **Priority** - `fields.priority.name`
+- **Type** - `fields.issuetype.name`
+- **Subtasks** - `fields.subtasks[]`
+- **Comments** - `fields.comment.comments[]`
+- **Linked issues** - `fields.issuelinks[]`
+
+**Note**: Use the jira-integrator skill's ADF parsing helper to extract plain text from description.
 
 ### Step 2: Analyze Story Components
 

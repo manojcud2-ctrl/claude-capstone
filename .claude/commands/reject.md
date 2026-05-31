@@ -317,10 +317,10 @@ Output:
 
 Reason: missing API rate limiting requirements
 
-Artifact: .artifacts/PMX-123-requirements.md
+Artifact: .artifacts/WA-123-requirements.md
 
 Options to Fix:
-1. Edit .artifacts/PMX-123-requirements.md manually
+1. Edit .artifacts/WA-123-requirements.md manually
 2. Run: retry requirements
 3. Run: view requirements
 
@@ -353,7 +353,7 @@ Reason: Database schema is not defined
 ### After Fix and Re-approval
 
 ```
-User: [edits .artifacts/PMX-123-architecture.md]
+User: [edits .artifacts/WA-123-architecture.md]
 User: "approve"
 
 Orchestrator:
@@ -375,7 +375,7 @@ Output:
 **Status**: Rejected
 **Rejected By**: User
 **Reason**: Database schema is not defined
-**Artifact**: .artifacts/PMX-123-architecture.md
+**Artifact**: .artifacts/WA-123-architecture.md
 **Details**: Stage rejected, awaiting corrections
 
 ---
@@ -393,7 +393,7 @@ Output:
 **Action**: Stage Approved
 **Status**: Success
 **Approved By**: User
-**Artifact**: .artifacts/PMX-123-architecture.md
+**Artifact**: .artifacts/WA-123-architecture.md
 **Next Stage**: Planning
 
 ---

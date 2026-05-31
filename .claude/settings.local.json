@@ -8,7 +8,11 @@
       "Skill(update-config)",
       "mcp__github__get_me",
       "mcp__github__search_repositories",
-      "mcp__github__create_pull_request"
+      "mcp__github__create_pull_request",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(uvx mcp-atlassian *)",
+      "Bash(grep -v \":0$\")"
     ]
   }
 }

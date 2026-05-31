@@ -28,14 +28,14 @@ Invoke this skill whenever you need to:
 
 **Example**:
 ```bash
-workflow-state init PMX-123 "Add weather endpoint" Feature
+workflow-state init WA-123 "Add weather endpoint" Feature
 ```
 
 **Output**:
 ```json
 {
   "version": "1.0",
-  "storyId": "PMX-123",
+  "storyId": "WA-123",
   "storyTitle": "Add weather endpoint",
   "storyType": "Feature",
   "currentStage": "Requirements",
@@ -80,8 +80,8 @@ workflow-state read approvedStages     # Returns array
 ```bash
 workflow-state update status WaitingForApproval
 workflow-state update currentStage Architecture
-workflow-state update "artifacts.requirements" ".artifacts/PMX-123-requirements.md"
-workflow-state update branch "feature/PMX-123-weather"
+workflow-state update "artifacts.requirements" ".artifacts/WA-123-requirements.md"
+workflow-state update branch "feature/WA-123-weather"
 ```
 
 ### 4. Append to Array
@@ -114,7 +114,7 @@ workflow-state append approvedStages Architecture
 ```
 ✅ Workflow state valid
 
-Story: PMX-123
+Story: WA-123
 Stage: Architecture
 Status: WaitingForApproval
 Approved: Requirements
@@ -256,7 +256,7 @@ Valid values: InProgress, WaitingForApproval, Completed, Failed
 // Initialize workflow
 Skill({ 
   skill: "workflow-state-manager",
-  args: "init PMX-123 'Add weather endpoint' Feature"
+  args: "init WA-123 'Add weather endpoint' Feature"
 });
 
 // Read current stage

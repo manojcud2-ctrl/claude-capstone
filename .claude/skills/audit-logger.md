@@ -28,18 +28,18 @@ Invoke this skill whenever you need to:
 
 **Example**:
 ```bash
-audit-logger init PMX-123
+audit-logger init WA-123
 ```
 
 **Output**: Creates `.artifacts/audit-log.md`:
 ```markdown
-# Audit Log - PMX-123
+# Audit Log - WA-123
 
 ## 2026-05-31T10:00:00Z - Workflow Initialization
 
 **Action**: Workflow Started
 **Status**: InProgress
-**Story ID**: PMX-123
+**Story ID**: WA-123
 **Initiated By**: User
 **Details**: Agentic SDLC workflow initialized
 
@@ -54,7 +54,7 @@ audit-logger init PMX-123
 
 **Example**:
 ```bash
-audit-logger log "Agent Invoked" "InProgress" "Starting Requirements Agent for PMX-123"
+audit-logger log "Agent Invoked" "InProgress" "Starting Requirements Agent for WA-123"
 ```
 
 **Output**: Appends to log:
@@ -63,7 +63,7 @@ audit-logger log "Agent Invoked" "InProgress" "Starting Requirements Agent for P
 
 **Action**: Agent Invoked
 **Status**: InProgress
-**Details**: Starting Requirements Agent for PMX-123
+**Details**: Starting Requirements Agent for WA-123
 
 ---
 ```
@@ -76,7 +76,7 @@ audit-logger log "Agent Invoked" "InProgress" "Starting Requirements Agent for P
 
 **Example**:
 ```bash
-audit-logger approve "Requirements" ".artifacts/PMX-123-requirements.md" "Architecture"
+audit-logger approve "Requirements" ".artifacts/WA-123-requirements.md" "Architecture"
 ```
 
 **Output**:
@@ -86,7 +86,7 @@ audit-logger approve "Requirements" ".artifacts/PMX-123-requirements.md" "Archit
 **Action**: Stage Approved
 **Status**: Success
 **Approved By**: User
-**Artifact**: .artifacts/PMX-123-requirements.md
+**Artifact**: .artifacts/WA-123-requirements.md
 **Next Stage**: Architecture
 **Duration**: 25 minutes
 
@@ -101,7 +101,7 @@ audit-logger approve "Requirements" ".artifacts/PMX-123-requirements.md" "Archit
 
 **Example**:
 ```bash
-audit-logger reject "Architecture" "Database schema not defined" ".artifacts/PMX-123-architecture.md"
+audit-logger reject "Architecture" "Database schema not defined" ".artifacts/WA-123-architecture.md"
 ```
 
 **Output**:
@@ -112,7 +112,7 @@ audit-logger reject "Architecture" "Database schema not defined" ".artifacts/PMX
 **Status**: Rejected
 **Rejected By**: User
 **Reason**: Database schema not defined
-**Artifact**: .artifacts/PMX-123-architecture.md
+**Artifact**: .artifacts/WA-123-architecture.md
 **Details**: Stage rejected, awaiting corrections
 
 ---
@@ -172,7 +172,7 @@ audit-logger agent "Review" "failed" "Timeout"
 **Status**: Success
 **Agent**: Implementation Agent
 **Duration**: 2 hours 30 minutes
-**Artifact**: .artifacts/PMX-123-implementation-summary.md
+**Artifact**: .artifacts/WA-123-implementation-summary.md
 
 ---
 ```
@@ -243,7 +243,7 @@ Found 3 matching entries:
 
 **Output**:
 ```
-Workflow Timeline - PMX-123
+Workflow Timeline - WA-123
 
 ├─ 10:00 Workflow Started
 │
@@ -274,7 +274,7 @@ Duration: 2 hours 20 minutes
 
 **Output**:
 ```
-Workflow Statistics - PMX-123
+Workflow Statistics - WA-123
 
 Total Events: 24
 Duration: 6 hours 15 minutes
@@ -416,7 +416,7 @@ Action: Manual review recommended
 // Initialize at workflow start
 Skill({
   skill: "audit-logger",
-  args: "init PMX-123"
+  args: "init WA-123"
 });
 
 // Log agent invocation
@@ -434,13 +434,13 @@ Skill({
 // Log approval
 Skill({
   skill: "audit-logger",
-  args: "approve Requirements .artifacts/PMX-123-requirements.md Architecture"
+  args: "approve Requirements .artifacts/WA-123-requirements.md Architecture"
 });
 
 // Log rejection
 Skill({
   skill: "audit-logger",
-  args: "reject Architecture 'Missing database design' .artifacts/PMX-123-architecture.md"
+  args: "reject Architecture 'Missing database design' .artifacts/WA-123-architecture.md"
 });
 
 // Log error

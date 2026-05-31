@@ -28,13 +28,13 @@ Invoke this skill whenever you need to:
 
 **Example**:
 ```bash
-artifact-validator exists .artifacts/PMX-123-requirements.md
+artifact-validator exists .artifacts/WA-123-requirements.md
 ```
 
 **Output**:
 ```
 ✅ Artifact exists
-Path: .artifacts/PMX-123-requirements.md
+Path: .artifacts/WA-123-requirements.md
 Size: 12.5 KB
 Modified: 2026-05-31T10:30:00Z
 ```
@@ -42,7 +42,7 @@ Modified: 2026-05-31T10:30:00Z
 **Or**:
 ```
 ❌ Artifact not found
-Path: .artifacts/PMX-123-requirements.md
+Path: .artifacts/WA-123-requirements.md
 ```
 
 ### 2. Validate Completeness
@@ -53,7 +53,7 @@ Path: .artifacts/PMX-123-requirements.md
 
 **Example**:
 ```bash
-artifact-validator complete .artifacts/PMX-123-architecture.md
+artifact-validator complete .artifacts/WA-123-architecture.md
 ```
 
 **Output**:
@@ -79,7 +79,7 @@ Issue: File is empty (0 bytes)
 
 **Example**:
 ```bash
-artifact-validator sections requirements .artifacts/PMX-123-requirements.md
+artifact-validator sections requirements .artifacts/WA-123-requirements.md
 ```
 
 **Checks for Requirements**:
@@ -128,7 +128,7 @@ Found:
 
 **Example**:
 ```bash
-artifact-validator stage architecture .artifacts/PMX-123-architecture.md
+artifact-validator stage architecture .artifacts/WA-123-architecture.md
 ```
 
 **Performs**:
@@ -161,14 +161,14 @@ Quality Score: 95/100
 
 **Example**:
 ```bash
-artifact-validator metrics .artifacts/PMX-123-implementation-summary.md
+artifact-validator metrics .artifacts/WA-123-implementation-summary.md
 ```
 
 **Output**:
 ```
 Artifact Metrics:
 
-File: PMX-123-implementation-summary.md
+File: WA-123-implementation-summary.md
 Size: 18.7 KB
 Created: 2026-05-31T12:00:00Z
 Modified: 2026-05-31T12:45:00Z
@@ -196,14 +196,14 @@ Readability: High
 
 **Example**:
 ```bash
-artifact-validator compare .artifacts/PMX-123-requirements.md .artifacts/PMX-123-architecture.md
+artifact-validator compare .artifacts/WA-123-requirements.md .artifacts/WA-123-architecture.md
 ```
 
 **Output**:
 ```
 Consistency Check:
 
-✅ Story ID matches: PMX-123
+✅ Story ID matches: WA-123
 ✅ Requirements referenced in Architecture
 ✅ All functional requirements addressed
 ⚠️ 2 requirements without explicit architecture coverage
@@ -356,7 +356,7 @@ Add stage-specific validation functions.
 
 ```
 Error: Artifact not found
-Path: .artifacts/PMX-123-requirements.md
+Path: .artifacts/WA-123-requirements.md
 Action: Generate artifact or check path
 ```
 
@@ -364,7 +364,7 @@ Action: Generate artifact or check path
 
 ```
 Error: Artifact is empty
-Path: .artifacts/PMX-123-requirements.md
+Path: .artifacts/WA-123-requirements.md
 Size: 0 bytes
 Action: Regenerate artifact or add content
 ```
@@ -385,7 +385,7 @@ Recommendation: Add missing sections before approval
 // Before approving stage
 const validation = Skill({
   skill: "artifact-validator",
-  args: "stage requirements .artifacts/PMX-123-requirements.md"
+  args: "stage requirements .artifacts/WA-123-requirements.md"
 });
 
 if (validation.includes("✅")) {
@@ -397,13 +397,13 @@ if (validation.includes("✅")) {
 // Check specific sections
 Skill({
   skill: "artifact-validator",
-  args: "sections architecture .artifacts/PMX-123-architecture.md"
+  args: "sections architecture .artifacts/WA-123-architecture.md"
 });
 
 // Get metrics for reporting
 Skill({
   skill: "artifact-validator",
-  args: "metrics .artifacts/PMX-123-implementation-summary.md"
+  args: "metrics .artifacts/WA-123-implementation-summary.md"
 });
 ```
 

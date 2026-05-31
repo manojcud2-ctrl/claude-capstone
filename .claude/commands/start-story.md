@@ -17,15 +17,15 @@ start story <jira-id>
 ```
 
 **Examples**:
-- `start story PMX-123`
-- `start story PROJ-456`
+- `start story WA-123`
+- `start story WA-456`
 - `start story WX-789`
 
 ## Parameters
 
 - **jira-id**: Jira story identifier in format `{PROJECT}-{NUMBER}`
   - Must match pattern: 2-6 uppercase letters, dash, 1-6 digits
-  - Examples: `PMX-123`, `WEATHER-42`, `API-1`
+  - Examples: `WA-123`, `WA-42`, `API-1`
 
 ## Pre-conditions
 
@@ -343,13 +343,13 @@ Workflow pauses at approval gate. Orchestrator waits for user command:
 ## Example Execution
 
 ```
-User: "start story PMX-123"
+User: "start story WA-123"
 
 Orchestrator:
 [Creates .artifacts/]
 [Initializes workflow-state.json]
 [Initializes audit-log.md]
-[Fetches PMX-123 details from Jira]
+[Fetches WA-123 details from Jira]
 [Invokes Requirements Agent]
 [Waits for agent completion]
 [Validates artifact]
@@ -358,9 +358,9 @@ Orchestrator:
 Output:
 ✅ Requirements Stage Complete
 
-Story: PMX-123 - Add weather forecast endpoint
+Story: WA-123 - Add weather forecast endpoint
 
-Artifact: .artifacts/PMX-123-requirements.md
+Artifact: .artifacts/WA-123-requirements.md
 
 Summary:
 - 3 Business Requirements identified

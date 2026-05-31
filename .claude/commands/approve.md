@@ -425,21 +425,21 @@ User: "approve"
 
 Orchestrator:
 [Reads workflow-state.json - currentStage: Requirements]
-[Validates .artifacts/PMX-123-requirements.md exists]
+[Validates .artifacts/WA-123-requirements.md exists]
 [Updates approvedStages: ["Requirements"]]
 [Logs approval]
 [Determines next stage: Architecture]
 [Updates currentStage: Architecture]
 [Invokes Architecture Agent]
 [Waits for completion]
-[Validates .artifacts/PMX-123-architecture.md]
+[Validates .artifacts/WA-123-architecture.md]
 [Updates artifacts map]
 [Logs completion]
 
 Output:
 ✅ Architecture Stage Complete
 
-Artifact: .artifacts/PMX-123-architecture.md
+Artifact: .artifacts/WA-123-architecture.md
 
 Summary:
 - Technical solution designed
@@ -460,7 +460,7 @@ User: "approve"
 
 Orchestrator:
 [Reads workflow-state.json - currentStage: PR]
-[Validates .artifacts/PMX-123-pr-package.md exists]
+[Validates .artifacts/WA-123-pr-package.md exists]
 [Updates approvedStages: [..., "PR"]]
 [Logs approval]
 [Determines next stage: COMPLETE]
@@ -470,11 +470,11 @@ Orchestrator:
 Output:
 🎉 Workflow Complete!
 
-Story: PMX-123 - Add weather forecast endpoint
+Story: WA-123 - Add weather forecast endpoint
 
 All 7 stages completed and approved.
 
-PR Package: .artifacts/PMX-123-pr-package.md
+PR Package: .artifacts/WA-123-pr-package.md
 
 Create your pull request using the PR package!
 ```

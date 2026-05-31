@@ -28,8 +28,8 @@ Invoke this skill whenever you need to:
 
 **Example**:
 ```bash
-agent-coordinator invoke requirements PMX-123
-agent-coordinator invoke architecture PMX-123 .artifacts/PMX-123-requirements.md
+agent-coordinator invoke requirements WA-123
+agent-coordinator invoke architecture WA-123 .artifacts/WA-123-requirements.md
 ```
 
 **Process**:
@@ -45,7 +45,7 @@ agent-coordinator invoke architecture PMX-123 .artifacts/PMX-123-requirements.md
 🤖 Invoking Requirements Agent
 
 Agent: requirements-agent
-Story: PMX-123
+Story: WA-123
 Input: Jira Story Details
 
 Execution Status:
@@ -54,7 +54,7 @@ Execution Status:
 ✅ Agent completed successfully
 
 Output:
-  Artifact: .artifacts/PMX-123-requirements.md
+  Artifact: .artifacts/WA-123-requirements.md
   Size: 12.5 KB
   Validation: Passed
 
@@ -71,8 +71,8 @@ Duration: 25 minutes
 
 **Example**:
 ```bash
-agent-coordinator stage requirements PMX-123
-agent-coordinator stage architecture PMX-123
+agent-coordinator stage requirements WA-123
+agent-coordinator stage architecture WA-123
 ```
 
 **Automatically**:
@@ -119,7 +119,7 @@ Estimated Completion: 3 minutes
 
 **Example**:
 ```bash
-agent-coordinator validate requirements .artifacts/PMX-123-requirements.md
+agent-coordinator validate requirements .artifacts/WA-123-requirements.md
 ```
 
 **Checks**:
@@ -134,7 +134,7 @@ agent-coordinator validate requirements .artifacts/PMX-123-requirements.md
 ✅ Agent Output Valid
 
 Agent: Requirements Agent
-Output: .artifacts/PMX-123-requirements.md
+Output: .artifacts/WA-123-requirements.md
 
 Validation Results:
   ✅ Artifact exists
@@ -151,7 +151,7 @@ Status: Ready for approval gate
 ❌ Agent Output Invalid
 
 Agent: Requirements Agent
-Output: .artifacts/PMX-123-requirements.md
+Output: .artifacts/WA-123-requirements.md
 
 Validation Errors:
   ❌ Missing section: Acceptance Criteria
@@ -188,7 +188,7 @@ Failure Analysis:
 Recovery Options:
 
 1️⃣ Retry with Extended Timeout
-   Command: agent-coordinator retry planning PMX-123 --timeout=15m
+   Command: agent-coordinator retry planning WA-123 --timeout=15m
    Success Probability: High
 
 2️⃣ Retry with Different Input
@@ -222,7 +222,7 @@ Logs: Check .artifacts/audit-log.md for details
 
 **Example**:
 ```bash
-agent-coordinator retry architecture PMX-123 --timeout=20m
+agent-coordinator retry architecture WA-123 --timeout=20m
 ```
 
 **Output**:
@@ -230,7 +230,7 @@ agent-coordinator retry architecture PMX-123 --timeout=20m
 🔄 Retrying Architecture Agent
 
 Retry Attempt: 2
-Story: PMX-123
+Story: WA-123
 Timeout: 20 minutes (increased from 10)
 
 Previous Failure:
@@ -243,7 +243,7 @@ Retry Status:
 ✅ Agent completed successfully!
 
 Output:
-  Artifact: .artifacts/PMX-123-architecture.md
+  Artifact: .artifacts/WA-123-architecture.md
   Size: 15.8 KB
   Validation: Passed
 
@@ -268,7 +268,7 @@ Agent Status Report
 
 Agent ID: agent-abc123
 Agent Type: Implementation Agent
-Story: PMX-123
+Story: WA-123
 
 Status: Running
 Progress: 80%
@@ -298,12 +298,12 @@ Health: Good
 
 **Example**:
 ```bash
-agent-coordinator history PMX-123
+agent-coordinator history WA-123
 ```
 
 **Output**:
 ```
-Agent History - PMX-123
+Agent History - WA-123
 
 Total Invocations: 8
 Success Rate: 87.5% (7/8)
@@ -315,7 +315,7 @@ Timeline:
    Completed: 2026-05-31T10:30:00Z
    Duration: 25 minutes
    Status: ✅ Success
-   Output: .artifacts/PMX-123-requirements.md
+   Output: .artifacts/WA-123-requirements.md
 
 2. Architecture Agent
    Started: 2026-05-31T10:40:00Z
@@ -329,7 +329,7 @@ Timeline:
    Completed: 2026-05-31T12:03:00Z
    Duration: 18 minutes
    Status: ✅ Success
-   Output: .artifacts/PMX-123-architecture.md
+   Output: .artifacts/WA-123-architecture.md
 
 ...
 
@@ -486,13 +486,13 @@ Recovery: Check logs, retry, or escalate
 // Invoke requirements agent
 Skill({
   skill: "agent-coordinator",
-  args: "invoke requirements PMX-123"
+  args: "invoke requirements WA-123"
 });
 
 // Invoke architecture agent with input
 Skill({
   skill: "agent-coordinator",
-  args: "stage architecture PMX-123"
+  args: "stage architecture WA-123"
 });
 
 // Monitor running agent
@@ -504,7 +504,7 @@ Skill({
 // Validate output
 const validation = Skill({
   skill: "agent-coordinator",
-  args: "validate planning .artifacts/PMX-123-implementation-plan.md"
+  args: "validate planning .artifacts/WA-123-implementation-plan.md"
 });
 
 // Handle failure
@@ -518,7 +518,7 @@ if (agentFailed) {
 // Retry
 Skill({
   skill: "agent-coordinator",
-  args: "retry architecture PMX-123 --timeout=20m"
+  args: "retry architecture WA-123 --timeout=20m"
 });
 ```
 

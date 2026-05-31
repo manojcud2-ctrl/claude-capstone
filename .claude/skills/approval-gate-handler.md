@@ -28,7 +28,7 @@ Invoke this skill whenever you need to:
 
 **Example**:
 ```bash
-approval-gate create Requirements .artifacts/PMX-123-requirements.md
+approval-gate create Requirements .artifacts/WA-123-requirements.md
 ```
 
 **Output**:
@@ -39,10 +39,10 @@ approval-gate create Requirements .artifacts/PMX-123-requirements.md
 
 ✅ Stage Complete
 
-Story: PMX-123 - Add weather endpoint
+Story: WA-123 - Add weather endpoint
 
 Artifact Generated:
-.artifacts/PMX-123-requirements.md
+.artifacts/WA-123-requirements.md
 
 Artifact Summary:
 ────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ Tip: Run "view requirements" to see complete artifact before approving
 
 **Example**:
 ```bash
-approval-gate summary Architecture .artifacts/PMX-123-architecture.md
+approval-gate summary Architecture .artifacts/WA-123-architecture.md
 ```
 
 **Output**:
@@ -160,7 +160,7 @@ If View First:
 
 **Example**:
 ```bash
-approval-gate enforce Implementation .artifacts/PMX-123-implementation-summary.md
+approval-gate enforce Implementation .artifacts/WA-123-implementation-summary.md
 ```
 
 **Checks**:
@@ -174,7 +174,7 @@ approval-gate enforce Implementation .artifacts/PMX-123-implementation-summary.m
 ```
 ✅ Approval Gate Requirements Met
 
-Artifact: .artifacts/PMX-123-implementation-summary.md
+Artifact: .artifacts/WA-123-implementation-summary.md
 Validation: Passed
 
 Ready for approval.
@@ -184,7 +184,7 @@ Ready for approval.
 ```
 ❌ Approval Gate Requirements NOT Met
 
-Artifact: .artifacts/PMX-123-implementation-summary.md
+Artifact: .artifacts/WA-123-implementation-summary.md
 
 Issues:
   ❌ Test Results section missing
@@ -207,7 +207,7 @@ Actions:
 
 **Example**:
 ```bash
-approval-gate approve Planning .artifacts/PMX-123-implementation-plan.md Implementation
+approval-gate approve Planning .artifacts/WA-123-implementation-plan.md Implementation
 ```
 
 **Actions**:
@@ -222,7 +222,7 @@ approval-gate approve Planning .artifacts/PMX-123-implementation-plan.md Impleme
 
 Approved By: User
 Approved At: 2026-05-31T12:20:00Z
-Artifact: .artifacts/PMX-123-implementation-plan.md
+Artifact: .artifacts/WA-123-implementation-plan.md
 
 Workflow Updated:
   • Planning added to approved stages
@@ -242,7 +242,7 @@ Proceeding to Implementation stage...
 
 **Example**:
 ```bash
-approval-gate reject Architecture .artifacts/PMX-123-architecture.md "Database schema not defined"
+approval-gate reject Architecture .artifacts/WA-123-architecture.md "Database schema not defined"
 ```
 
 **Actions**:
@@ -259,7 +259,7 @@ Rejected By: User
 Rejected At: 2026-05-31T11:15:00Z
 Reason: Database schema not defined
 
-Artifact: .artifacts/PMX-123-architecture.md
+Artifact: .artifacts/WA-123-architecture.md
 
 Workflow Status:
   • Current stage: Architecture (unchanged)
@@ -269,7 +269,7 @@ Workflow Status:
 Fix Options:
 
 1️⃣ Edit Manually
-   • Open: .artifacts/PMX-123-architecture.md
+   • Open: .artifacts/WA-123-architecture.md
    • Add database schema section
    • Include table definitions and relationships
    • Save and run: approve
@@ -306,12 +306,12 @@ When Ready:
 Current Approval Gate Status
 ────────────────────────────────────────────────────
 
-Workflow: PMX-123 - Add weather endpoint
+Workflow: WA-123 - Add weather endpoint
 
 Current Gate:
   Stage: Implementation
   Status: Awaiting Approval
-  Artifact: .artifacts/PMX-123-implementation-summary.md
+  Artifact: .artifacts/WA-123-implementation-summary.md
   Created: 2026-05-31T15:30:00Z
   Waiting: 15 minutes
 
@@ -402,7 +402,7 @@ Tracks gate status in workflow state:
   "currentGate": {
     "stage": "Implementation",
     "status": "Awaiting",
-    "artifactPath": ".artifacts/PMX-123-implementation-summary.md",
+    "artifactPath": ".artifacts/WA-123-implementation-summary.md",
     "createdAt": "2026-05-31T15:30:00Z",
     "validationPassed": true
   }
@@ -428,7 +428,7 @@ Uses audit-logger skill for logging all gate events.
 ```
 Error: Cannot create approval gate
 Reason: Artifact not found
-Path: .artifacts/PMX-123-requirements.md
+Path: .artifacts/WA-123-requirements.md
 Action: Generate artifact first, then create gate
 ```
 
@@ -458,13 +458,13 @@ Action: Provide valid decision
 // Create gate after stage completes
 Skill({
   skill: "approval-gate-handler",
-  args: "create Requirements .artifacts/PMX-123-requirements.md"
+  args: "create Requirements .artifacts/WA-123-requirements.md"
 });
 
 // Enforce validation before approval
 const validation = Skill({
   skill: "approval-gate-handler",
-  args: "enforce Requirements .artifacts/PMX-123-requirements.md"
+  args: "enforce Requirements .artifacts/WA-123-requirements.md"
 });
 
 // Collect decision
@@ -477,7 +477,7 @@ const decision = Skill({
 if (decision.includes("approve")) {
   Skill({
     skill: "approval-gate-handler",
-    args: "approve Requirements .artifacts/PMX-123-requirements.md Architecture"
+    args: "approve Requirements .artifacts/WA-123-requirements.md Architecture"
   });
 }
 
@@ -485,7 +485,7 @@ if (decision.includes("approve")) {
 if (decision.includes("reject")) {
   Skill({
     skill: "approval-gate-handler",
-    args: `reject Requirements .artifacts/PMX-123-requirements.md "${reason}"`
+    args: `reject Requirements .artifacts/WA-123-requirements.md "${reason}"`
   });
 }
 ```

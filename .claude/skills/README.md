@@ -84,7 +84,7 @@ test-generator coverage 90
 
 **Usage Example**:
 ```bash
-workflow-state init PMX-123 "Add weather endpoint" Feature
+workflow-state init WA-123 "Add weather endpoint" Feature
 workflow-state update status WaitingForApproval
 workflow-state append approvedStages Requirements
 workflow-state progress
@@ -114,9 +114,9 @@ workflow-state progress
 
 **Usage Example**:
 ```bash
-artifact-validator exists .artifacts/PMX-123-requirements.md
-artifact-validator stage requirements .artifacts/PMX-123-requirements.md
-artifact-validator metrics .artifacts/PMX-123-architecture.md
+artifact-validator exists .artifacts/WA-123-requirements.md
+artifact-validator stage requirements .artifacts/WA-123-requirements.md
+artifact-validator metrics .artifacts/WA-123-architecture.md
 ```
 
 **Benefits**:
@@ -146,9 +146,9 @@ artifact-validator metrics .artifacts/PMX-123-architecture.md
 
 **Usage Example**:
 ```bash
-audit-logger init PMX-123
+audit-logger init WA-123
 audit-logger agent Requirements started
-audit-logger approve Requirements .artifacts/PMX-123-requirements.md Architecture
+audit-logger approve Requirements .artifacts/WA-123-requirements.md Architecture
 audit-logger timeline
 ```
 
@@ -178,10 +178,10 @@ audit-logger timeline
 
 **Usage Example**:
 ```bash
-approval-gate create Requirements .artifacts/PMX-123-requirements.md
-approval-gate enforce Requirements .artifacts/PMX-123-requirements.md
+approval-gate create Requirements .artifacts/WA-123-requirements.md
+approval-gate enforce Requirements .artifacts/WA-123-requirements.md
 approval-gate prompt Requirements
-approval-gate approve Requirements .artifacts/PMX-123-requirements.md Architecture
+approval-gate approve Requirements .artifacts/WA-123-requirements.md Architecture
 ```
 
 **Benefits**:
@@ -192,7 +192,39 @@ approval-gate approve Requirements .artifacts/PMX-123-requirements.md Architectu
 
 ---
 
-### 7. GitHub Integrator
+### 7. Jira Integrator
+
+**File**: `jira-integrator.md`
+
+**Purpose**: Interact with Jira to fetch and update issues, stories, and workflow
+
+**Key Operations**:
+- `get-issue` - Fetch issue details
+- `get-issue-expanded` - Fetch with expanded fields (changelog, operations)
+- `update-issue` - Update issue fields
+- `transition-issue` - Move issue through workflow
+- `search-jql` - Search using JQL queries
+- `add-comment` - Add comment to issue
+- `get-subtasks` - Get issue subtasks
+
+**Usage Example**:
+```bash
+jira-integrator get-issue WA-46
+jira-integrator get-issue-expanded WA-46
+jira-integrator add-comment WA-46 "Requirements extracted"
+jira-integrator search-jql "project = WA AND status = 'To Do'"
+```
+
+**Benefits**:
+- Centralized Jira access
+- Consistent error handling
+- ADF format parsing helpers
+- Reusable across agents
+- Environment-based config
+
+---
+
+### 8. GitHub Integrator
 
 **File**: `github-integrator.md`
 
@@ -240,10 +272,10 @@ github-integrator check-pr 123
 
 **Usage Example**:
 ```bash
-agent-coordinator invoke requirements PMX-123
-agent-coordinator stage architecture PMX-123
-agent-coordinator validate planning .artifacts/PMX-123-implementation-plan.md
-agent-coordinator retry architecture PMX-123 --timeout=20m
+agent-coordinator invoke requirements WA-123
+agent-coordinator stage architecture WA-123
+agent-coordinator validate planning .artifacts/WA-123-implementation-plan.md
+agent-coordinator retry architecture WA-123 --timeout=20m
 ```
 
 **Benefits**:
@@ -262,7 +294,7 @@ agent-coordinator retry architecture PMX-123 --timeout=20m
 // Invoke skill via Skill tool
 Skill({
   skill: "workflow-state-manager",
-  args: "init PMX-123 'Add weather endpoint' Feature"
+  args: "init WA-123 'Add weather endpoint' Feature"
 });
 
 // Get result
@@ -272,9 +304,9 @@ const stage = Skill({
 });
 
 // Chain skills
-Skill({ skill: "audit-logger", args: "init PMX-123" });
-Skill({ skill: "workflow-state-manager", args: "init PMX-123 ..." });
-Skill({ skill: "agent-coordinator", args: "invoke requirements PMX-123" });
+Skill({ skill: "audit-logger", args: "init WA-123" });
+Skill({ skill: "workflow-state-manager", args: "init WA-123 ..." });
+Skill({ skill: "agent-coordinator", args: "invoke requirements WA-123" });
 ```
 
 ### From Commands
@@ -538,7 +570,7 @@ Skill({
 // 4. Validate artifact quality
 Skill({
   skill: "artifact-validator",
-  args: "stage implementation .artifacts/PMX-123-implementation-summary.md"
+  args: "stage implementation .artifacts/WA-123-implementation-summary.md"
 });
 
 // 5. Security scan

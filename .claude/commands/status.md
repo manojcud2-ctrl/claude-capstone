@@ -36,7 +36,7 @@ To start a new workflow:
   start story <jira-id>
 
 Example:
-  start story PMX-123
+  start story WA-123
 ```
 
 ## Process
@@ -243,7 +243,7 @@ status --brief
 
 Output:
 ```
-Story: PMX-123 | Stage: Implementation | Status: WaitingForApproval
+Story: WA-123 | Stage: Implementation | Status: WaitingForApproval
 Progress: 3/7 stages (43%)
 Next: Approve or reject implementation
 ```
@@ -344,7 +344,7 @@ To start a new workflow:
   start story <jira-id>
 
 Example:
-  start story PMX-123
+  start story WA-123
 ```
 
 ### Corrupt State File
@@ -367,7 +367,7 @@ Tip: Check .artifacts/audit-log.md for last known good state
 ```
 ⚠️ Warning: Some artifacts are missing
 
-Expected: .artifacts/PMX-123-requirements.md
+Expected: .artifacts/WA-123-requirements.md
 Status: Missing
 
 This may indicate a workflow issue.
@@ -390,7 +390,7 @@ Output:
 ║                    WORKFLOW STATUS                            ║
 ╚═══════════════════════════════════════════════════════════════╝
 
-Story: PMX-123 - Add weather forecast endpoint
+Story: WA-123 - Add weather forecast endpoint
 Type: Feature
 Status: WaitingForApproval
 Progress: [43%] 3/7 stages
@@ -438,7 +438,7 @@ Output:
 ║                    WORKFLOW STATUS                            ║
 ╚═══════════════════════════════════════════════════════════════╝
 
-Story: PMX-123 - Add weather forecast endpoint
+Story: WA-123 - Add weather forecast endpoint
 Type: Feature
 Status: ✅ Completed
 Progress: [100%] 7/7 stages
@@ -463,7 +463,7 @@ Duration: 6 hours
 
 🎉 WORKFLOW COMPLETE!
 
-PR Package: .artifacts/PMX-123-pr-package.md
+PR Package: .artifacts/WA-123-pr-package.md
 
 Next Steps:
   1. Review PR package
@@ -485,7 +485,7 @@ To start a new workflow:
   start story <jira-id>
 
 Example:
-  start story PMX-123
+  start story WA-123
 ```
 
 ## Integration with Other Commands
