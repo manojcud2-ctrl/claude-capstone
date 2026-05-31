@@ -26,7 +26,7 @@ None - displays status of active workflow
 
 ## Pre-conditions
 
-- Workflow state file exists (`.artifacts/workflow-state.json`)
+- StateManager initialized with active workflow
 
 If no workflow exists, displays:
 ```
@@ -41,42 +41,71 @@ Example:
 
 ## Process
 
-### Step 1: Check for Workflow
+### Step 1: Check for Active Workflow
 
+**Using StateManager API:**
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+// Get active workflow ID
+const storyId = await sm.getActiveStory();
+if (!storyId) {
+  console.log('No active workflow found');
+  console.log('To start: start story <jira-id>');
+  process.exit(0);
+}
+```
+
+**Using CLI:**
 ```bash
-if [ ! -f ".artifacts/workflow-state.json" ]; then
+# Check for active workflow
+node .claude/skills/workflow-state-manager.js list | grep -q "Active Workflows" || {
   echo "No active workflow found"
-  echo ""
-  echo "To start a new workflow:"
-  echo "  start story <jira-id>"
+  echo "To start: start story <jira-id>"
   exit 0
-fi
+}
 ```
 
 ### Step 2: Read Workflow State
 
-```bash
-cat .artifacts/workflow-state.json
+**Using StateManager API:**
+```javascript
+const workflow = await sm.getWorkflow(storyId);
+const {
+  jiraStoryId,
+  storyTitle,
+  storyType,
+  currentStage,
+  status,
+  stages,
+  createdAt,
+  lastUpdated
+} = workflow;
 ```
 
-Parse:
-- `storyId`
-- `storyTitle`
-- `storyType`
-- `currentStage`
-- `status`
-- `approvedStages`
-- `startedAt`
-- `lastUpdatedAt`
-- `artifacts` (all artifact paths)
-- `branch`
+**Using CLI:**
+```bash
+# Use the progress command for quick status
+node .claude/skills/workflow-state-manager.js progress
+
+# Or read full state
+WORKFLOW_JSON=$(node .claude/skills/workflow-state-manager.js read)
+```
 
 ### Step 3: Calculate Progress
 
-```bash
-TOTAL_STAGES=7
-COMPLETED_STAGES=${#approvedStages[@]}
-PROGRESS_PERCENT=$((COMPLETED_STAGES * 100 / TOTAL_STAGES))
+```javascript
+const STAGE_NAMES = [
+  'requirements', 'architecture', 'planning',
+  'implementation', 'review', 'verification', 'pr'
+];
+
+const completedCount = STAGE_NAMES.filter(
+  name => workflow.stages[name].status === 'completed'
+).length;
+
+const progressPercent = Math.round((completedCount / 7) * 100);
 ```
 
 ### Step 4: Determine Current Action
@@ -119,12 +148,12 @@ Duration: {DURATION}
 📋 STAGE PROGRESS:
 
 ✅ Completed Stages ({COUNT}):
-  1. Requirements    ✓ Approved  → .artifacts/{STORY_ID}-requirements.md
-  2. Architecture    ✓ Approved  → .artifacts/{STORY_ID}-architecture.md
-  3. Planning        ✓ Approved  → .artifacts/{STORY_ID}-implementation-plan.md
+  1. Requirements    ✓ Approved  → docs/workflows/{STORY_ID}/requirements.md
+  2. Architecture    ✓ Approved  → docs/workflows/{STORY_ID}/architecture.md
+  3. Planning        ✓ Approved  → docs/workflows/{STORY_ID}/impl-plan.md
 
 → Current Stage:
-  4. Implementation  ⏳ {STATUS}  → .artifacts/{STORY_ID}-implementation-summary.md
+  4. Implementation  ⏳ {STATUS}  → docs/workflows/{STORY_ID}/implementation-report.md
 
 ⏱ Pending Stages ({COUNT}):
   5. Review          ⊗ Not Started
@@ -136,18 +165,19 @@ Duration: {DURATION}
 📁 ARTIFACTS:
 
 Generated:
-  • .artifacts/{STORY_ID}-requirements.md (✓)
-  • .artifacts/{STORY_ID}-architecture.md (✓)
-  • .artifacts/{STORY_ID}-implementation-plan.md (✓)
-  • .artifacts/{STORY_ID}-implementation-summary.md (⏳)
+  • docs/workflows/{STORY_ID}/requirements.md (✓)
+  • docs/workflows/{STORY_ID}/architecture.md (✓)
+  • docs/workflows/{STORY_ID}/impl-plan.md (✓)
+  • docs/workflows/{STORY_ID}/implementation-report.md (⏳)
 
 Pending:
-  • .artifacts/{STORY_ID}-review-report.md
-  • .artifacts/{STORY_ID}-verification-report.md
-  • .artifacts/{STORY_ID}-pr-package.md
+  • docs/workflows/{STORY_ID}/review-report.md
+  • docs/workflows/{STORY_ID}/verification-report.md
+  • docs/workflows/{STORY_ID}/pr-description.md
 
 State Files:
-  • .artifacts/workflow-state.json
+  • .claude/state/workflows/{STORY_ID}.json (workflow state)
+  • .claude/state/index.json (active workflows index)
   • .artifacts/audit-log.md
 
 ─────────────────────────────────────────────────────────────────
@@ -223,7 +253,7 @@ Tip: Review error logs before retrying
 
 All 7 stages completed successfully!
 
-PR Package: .artifacts/{STORY_ID}-pr-package.md
+PR Package: docs/workflows/{STORY_ID}/pr-description.md
 
 Next Steps:
   1. Review PR package

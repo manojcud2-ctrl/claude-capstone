@@ -13,11 +13,12 @@ Perform final verification that all acceptance criteria are met, requirements ar
 
 ## Input
 
-- **Review Report**: `.artifacts/{storyId}-review-report.md`
-- **Implementation Summary**: `.artifacts/{storyId}-implementation-summary.md`
-- **Requirements Specification**: `.artifacts/{storyId}-requirements.md`
+- **Review Report**: `docs/workflows/{storyId}/review-report.md` (from previous stage)
+- **Implementation Report**: `docs/workflows/{storyId}/implementation-report.md` (from StateManager)
+- **Requirements Specification**: `docs/workflows/{storyId}/requirements.md` (from StateManager)
 - **Source Code**: Implementation on feature branch
 - **Tests**: Test suite
+- **Workflow State**: Read from StateManager to get context
 
 ## Responsibilities
 
@@ -505,9 +506,72 @@ Can be addressed later:
 
 ## Output Artifact
 
-**File**: `.artifacts/{storyId}-verification-report.md`
+**File**: `docs/workflows/{storyId}/verification-report.md`
 
 This artifact will be used as input to the PR Agent (if verification passes).
+
+## State Management
+
+This agent uses StateManager API for workflow state tracking.
+
+### Read Previous Stage Artifacts
+
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+// Get workflow and all previous stages
+const workflow = await sm.getWorkflow(storyId);
+const reviewReport = workflow.stages.review.artifact;
+const implReport = workflow.stages.implementation.artifact;
+const requirementsDoc = workflow.stages.requirements.artifact;
+
+// Read artifacts
+const review = await fs.promises.readFile(reviewReport, 'utf8');
+const implementation = await fs.promises.readFile(implReport, 'utf8');
+const requirements = await fs.promises.readFile(requirementsDoc, 'utf8');
+```
+
+### Update Stage Status
+
+**When starting work:**
+```javascript
+await sm.updateStage(storyId, 'verification', {
+  status: 'in_progress',
+  generatedAt: new Date().toISOString()
+});
+```
+
+**When artifact is created:**
+```javascript
+await sm.updateStage(storyId, 'verification', {
+  status: 'draft',
+  artifact: `docs/workflows/${storyId}/verification-report.md`,
+  summary: `${passedCriteria}/${totalCriteria} acceptance criteria passed, all tests passing`,
+  generatedAt: new Date().toISOString()
+});
+```
+
+**On error:**
+```javascript
+await sm.updateStage(storyId, 'verification', {
+  status: 'failed',
+  comments: [...existingComments, errorMessage]
+});
+```
+
+### CLI Alternative
+
+```bash
+# Set active workflow
+node .claude/skills/workflow-state-manager.js set-active ${STORY_ID}
+
+# Get review report
+REVIEW_REPORT=$(node .claude/skills/workflow-state-manager.js read stages.review.artifact | jq -r '.')
+
+# Update stage when complete
+node .claude/skills/workflow-state-manager.js update-stage ${STORY_ID} verification '{"status":"draft","artifact":"docs/workflows/'${STORY_ID}'/verification-report.md","summary":"Verification passed"}'
+```
 
 ## Validation
 

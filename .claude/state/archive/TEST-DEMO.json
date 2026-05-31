@@ -1,0 +1,67 @@
+{
+  "jiraStoryId": "TEST-DEMO",
+  "currentStage": "requirements",
+  "status": "pending",
+  "createdAt": "2026-05-31T10:03:38.766Z",
+  "lastUpdated": "2026-05-31T10:03:38.768Z",
+  "stages": {
+    "requirements": {
+      "status": "pending",
+      "artifact": null,
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": null,
+      "summary": ""
+    },
+    "architecture": {
+      "status": "pending",
+      "artifact": null,
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": null,
+      "summary": ""
+    },
+    "planning": {
+      "status": "pending",
+      "artifact": null,
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": null,
+      "summary": ""
+    },
+    "implementation": {
+      "status": "pending",
+      "artifact": null,
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": null,
+      "summary": ""
+    },
+    "review": {
+      "status": "pending",
+      "artifact": null,
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": null,
+      "summary": ""
+    },
+    "verification": {
+      "status": "pending",
+      "artifact": null,
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": null,
+      "summary": ""
+    },
+    "pr": {
+      "status": "pending",
+      "artifact": null,
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": null,
+      "summary": ""
+    }
+  },
+  "storyTitle": "Demo workflow",
+  "storyType": "Feature"
+}

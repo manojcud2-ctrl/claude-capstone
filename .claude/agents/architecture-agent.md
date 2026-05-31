@@ -13,8 +13,9 @@ Design the technical solution architecture based on requirements, identifying im
 
 ## Input
 
-- **Requirements Artifact**: `.artifacts/{storyId}-requirements.md`
+- **Requirements Artifact**: `docs/workflows/{storyId}/requirements.md` (from previous stage)
 - **Codebase**: Current repository structure and code
+- **Workflow State**: Read from StateManager to get context
 
 ## Responsibilities
 
@@ -32,7 +33,8 @@ Design the technical solution architecture based on requirements, identifying im
 ### Step 1: Read Requirements
 
 ```bash
-cat .artifacts/{storyId}-requirements.md
+# Get requirements artifact path from workflow state
+cat docs/workflows/{storyId}/requirements.md
 ```
 
 Parse and understand:
@@ -362,9 +364,72 @@ Files that need documentation updates:
 
 ## Output Artifact
 
-**File**: `.artifacts/{storyId}-architecture.md`
+**File**: `docs/workflows/{storyId}/architecture.md`
 
 This artifact will be used as input to the Planning Agent.
+
+## State Management
+
+This agent uses StateManager API for workflow state tracking.
+
+### Read Previous Stage Artifacts
+
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+// Get workflow and previous stage
+const workflow = await sm.getWorkflow(storyId);
+const requirementsStage = workflow.stages.requirements;
+const requirementsDoc = requirementsStage.artifact; // 'docs/workflows/{id}/requirements.md'
+
+// Read requirements
+const requirements = await fs.promises.readFile(requirementsDoc, 'utf8');
+```
+
+### Update Stage Status
+
+**When starting work:**
+```javascript
+await sm.updateStage(storyId, 'architecture', {
+  status: 'in_progress',
+  generatedAt: new Date().toISOString()
+});
+```
+
+**When artifact is created:**
+```javascript
+await sm.updateStage(storyId, 'architecture', {
+  status: 'draft',
+  artifact: `docs/workflows/${storyId}/architecture.md`,
+  summary: `Designed ${componentCount} components, ${interfaceCount} interfaces, identified ${riskCount} risks`,
+  generatedAt: new Date().toISOString()
+});
+```
+
+**On error:**
+```javascript
+await sm.updateStage(storyId, 'architecture', {
+  status: 'failed',
+  comments: [...existingComments, errorMessage]
+});
+```
+
+### CLI Alternative
+
+```bash
+# Set active workflow
+node .claude/skills/workflow-state-manager.js set-active ${STORY_ID}
+
+# Update status when starting
+node .claude/skills/workflow-state-manager.js update status in_progress
+
+# Get requirements artifact path
+REQUIREMENTS_PATH=$(node .claude/skills/workflow-state-manager.js read stages.requirements.artifact | jq -r '.')
+
+# Update stage when complete
+node .claude/skills/workflow-state-manager.js update-stage ${STORY_ID} architecture '{"status":"draft","artifact":"docs/workflows/'${STORY_ID}'/architecture.md","summary":"Architecture designed"}'
+```
 
 ## Validation
 

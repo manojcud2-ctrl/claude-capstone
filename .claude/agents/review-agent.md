@@ -13,12 +13,13 @@ Conduct comprehensive code review of the implementation, checking for architectu
 
 ## Input
 
-- **Implementation Summary**: `.artifacts/{storyId}-implementation-summary.md`
-- **Architecture Specification**: `.artifacts/{storyId}-architecture.md`
-- **Requirements Specification**: `.artifacts/{storyId}-requirements.md`
-- **Implementation Plan**: `.artifacts/{storyId}-implementation-plan.md`
+- **Implementation Report**: `docs/workflows/{storyId}/implementation-report.md` (from previous stage)
+- **Architecture Specification**: `docs/workflows/{storyId}/architecture.md` (from StateManager)
+- **Requirements Specification**: `docs/workflows/{storyId}/requirements.md` (from StateManager)
+- **Implementation Plan**: `docs/workflows/{storyId}/impl-plan.md` (from StateManager)
 - **Source Code**: Changed files on feature branch
 - **Tests**: Test files
+- **Workflow State**: Read from StateManager to get context
 
 ## Responsibilities
 
@@ -446,9 +447,73 @@ Can be addressed later:
 
 ## Output Artifact
 
-**File**: `.artifacts/{storyId}-review-report.md`
+**File**: `docs/workflows/{storyId}/review-report.md`
 
 This artifact will be used as input to the Verification Agent.
+
+## State Management
+
+This agent uses StateManager API for workflow state tracking.
+
+### Read Previous Stage Artifacts
+
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+// Get workflow and all previous stages
+const workflow = await sm.getWorkflow(storyId);
+const implReport = workflow.stages.implementation.artifact;
+const requirementsDoc = workflow.stages.requirements.artifact;
+const architectureDoc = workflow.stages.architecture.artifact;
+const planDoc = workflow.stages.planning.artifact;
+
+// Read artifacts
+const implementationReport = await fs.promises.readFile(implReport, 'utf8');
+const requirements = await fs.promises.readFile(requirementsDoc, 'utf8');
+const architecture = await fs.promises.readFile(architectureDoc, 'utf8');
+```
+
+### Update Stage Status
+
+**When starting work:**
+```javascript
+await sm.updateStage(storyId, 'review', {
+  status: 'in_progress',
+  generatedAt: new Date().toISOString()
+});
+```
+
+**When artifact is created:**
+```javascript
+await sm.updateStage(storyId, 'review', {
+  status: 'draft',
+  artifact: `docs/workflows/${storyId}/review-report.md`,
+  summary: `Found ${issueCount} issues (${criticalCount} critical, ${minorCount} minor), test coverage ${coveragePercent}%`,
+  generatedAt: new Date().toISOString()
+});
+```
+
+**On error:**
+```javascript
+await sm.updateStage(storyId, 'review', {
+  status: 'failed',
+  comments: [...existingComments, errorMessage]
+});
+```
+
+### CLI Alternative
+
+```bash
+# Set active workflow
+node .claude/skills/workflow-state-manager.js set-active ${STORY_ID}
+
+# Get implementation report
+IMPL_REPORT=$(node .claude/skills/workflow-state-manager.js read stages.implementation.artifact | jq -r '.')
+
+# Update stage when complete
+node .claude/skills/workflow-state-manager.js update-stage ${STORY_ID} review '{"status":"draft","artifact":"docs/workflows/'${STORY_ID}'/review-report.md","summary":"Review complete with X issues"}'
+```
 
 ## Validation
 

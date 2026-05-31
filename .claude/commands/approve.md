@@ -31,8 +31,8 @@ approve architecture
 
 ## Pre-conditions
 
-- Workflow state file exists (`.artifacts/workflow-state.json`)
-- Workflow status is `WaitingForApproval`
+- Workflow exists in StateManager (`.claude/state/workflows/{storyId}.json`)
+- Current stage status is `draft` (awaiting approval)
 - Current stage artifact exists and is valid
 - User has reviewed the artifact
 
@@ -40,23 +40,48 @@ approve architecture
 
 ### Step 1: Read Workflow State
 
-```bash
-cat .artifacts/workflow-state.json
+**Using StateManager API:**
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+// Get active workflow
+const storyId = await sm.getActiveStory();
+if (!storyId) {
+  throw new Error('No active workflow. Use: start-story <id>');
+}
+
+const workflow = await sm.getWorkflow(storyId);
+const currentStage = workflow.currentStage;
+const stageStatus = workflow.stages[currentStage].status;
+const artifact = workflow.stages[currentStage].artifact;
 ```
 
-Parse:
-- `storyId`
-- `currentStage`
-- `status`
-- `approvedStages`
-- Current artifact path
-
-### Step 2: Validate Workflow Status
-
+**Using CLI:**
 ```bash
-if [ "$STATUS" != "WaitingForApproval" ]; then
-  echo "Error: Workflow is not waiting for approval"
-  echo "Current status: $STATUS"
+# Get active workflow
+STORY_ID=$(node .claude/skills/workflow-state-manager.js read | jq -r '.jiraStoryId')
+
+# Get current stage
+CURRENT_STAGE=$(node .claude/skills/workflow-state-manager.js read currentStage | jq -r '.')
+
+# Get stage status
+STAGE_STATUS=$(node .claude/skills/workflow-state-manager.js read stages.${CURRENT_STAGE}.status | jq -r '.')
+```
+
+### Step 2: Validate Stage Status
+
+```javascript
+// Check stage is ready for approval
+if (stageStatus !== 'draft') {
+  throw new Error(`Stage ${currentStage} is not ready for approval (status: ${stageStatus})`);
+}
+```
+
+**CLI:**
+```bash
+if [ "$STAGE_STATUS" != "draft" ]; then
+  echo "Error: Stage $CURRENT_STAGE is not ready (status: $STAGE_STATUS)"
   exit 1
 fi
 ```
@@ -75,35 +100,44 @@ fi
 
 ### Step 4: Validate Current Artifact
 
-```bash
-ARTIFACT_PATH="${ARTIFACTS[$CURRENT_STAGE]}"
+```javascript
+const artifactPath = workflow.stages[currentStage].artifact;
 
-# Check exists
-if [ ! -f "$ARTIFACT_PATH" ]; then
-  echo "Error: Artifact missing: $ARTIFACT_PATH"
-  echo "Cannot approve without valid artifact"
-  exit 1
-fi
-
-# Check not empty
-if [ ! -s "$ARTIFACT_PATH" ]; then
-  echo "Error: Artifact is empty: $ARTIFACT_PATH"
-  exit 1
-fi
-
-# Validate required sections (stage-specific)
-validate_artifact_sections "$CURRENT_STAGE" "$ARTIFACT_PATH"
+// Check exists
+const fs = require('fs').promises;
+try {
+  const stats = await fs.stat(artifactPath);
+  if (stats.size === 0) {
+    throw new Error(`Artifact is empty: ${artifactPath}`);
+  }
+} catch (error) {
+  throw new Error(`Artifact missing or invalid: ${artifactPath}`);
+}
 ```
 
-### Step 5: Update Workflow State - Add to Approved
+**CLI:**
+```bash
+ARTIFACT_PATH=$(node .claude/skills/workflow-state-manager.js read stages.${CURRENT_STAGE}.artifact | jq -r '.')
 
-```json
-{
-  ...
-  "approvedStages": [...existing, "{CURRENT_STAGE}"],
-  "status": "InProgress",
-  "lastUpdatedAt": "{ISO_TIMESTAMP}"
-}
+if [ ! -f "$ARTIFACT_PATH" ] || [ ! -s "$ARTIFACT_PATH" ]; then
+  echo "Error: Artifact missing or empty: $ARTIFACT_PATH"
+  exit 1
+fi
+```
+
+### Step 5: Approve Current Stage
+
+**Mark stage as completed:**
+```javascript
+await sm.updateStage(storyId, currentStage, {
+  status: 'completed',
+  approvedAt: new Date().toISOString()
+});
+```
+
+**CLI:**
+```bash
+node .claude/skills/workflow-state-manager.js update-stage "$STORY_ID" "$CURRENT_STAGE" '{"status":"completed","approvedAt":"'$(date -Iseconds)'"}'
 ```
 
 ### Step 6: Log Approval
@@ -126,79 +160,87 @@ Append to `.artifacts/audit-log.md`:
 
 Stage progression:
 ```
-Requirements → Architecture
-Architecture → Planning
-Planning → Implementation
-Implementation → Review
-Review → Verification
-Verification → PR
-PR → [WORKFLOW COMPLETE]
+requirements → architecture → planning → implementation → 
+review → verification → pr → [COMPLETE]
 ```
 
-```bash
-case "$CURRENT_STAGE" in
-  "Requirements")  NEXT_STAGE="Architecture" ;;
-  "Architecture")  NEXT_STAGE="Planning" ;;
-  "Planning")      NEXT_STAGE="Implementation" ;;
-  "Implementation") NEXT_STAGE="Review" ;;
-  "Review")        NEXT_STAGE="Verification" ;;
-  "Verification")  NEXT_STAGE="PR" ;;
-  "PR")            NEXT_STAGE="COMPLETE" ;;
-esac
+```javascript
+const STAGE_SEQUENCE = [
+  'requirements', 'architecture', 'planning', 'implementation',
+  'review', 'verification', 'pr'
+];
+
+const currentIndex = STAGE_SEQUENCE.indexOf(currentStage);
+const nextStage = STAGE_SEQUENCE[currentIndex + 1] || null;
 ```
 
 ### Step 8A: If Next Stage Exists - Invoke Agent
 
+**Update workflow to next stage:**
+```javascript
+if (nextStage) {
+  // Advance workflow
+  await sm.updateWorkflow(storyId, {
+    currentStage: nextStage,
+    status: 'in_progress'
+  });
+  
+  // Update next stage status
+  await sm.updateStage(storyId, nextStage, {
+    status: 'in_progress',
+    generatedAt: new Date().toISOString()
+  });
+  
+  // Invoke agent
+  await invokeStageAgent(nextStage, storyId, workflow);
+}
+```
+
+**CLI:**
 ```bash
-if [ "$NEXT_STAGE" != "COMPLETE" ]; then
-  # Update state with next stage
-  update_workflow_state "currentStage" "$NEXT_STAGE"
+# Get next stage
+NEXT_STAGE=$(get_next_stage "$CURRENT_STAGE")
+
+if [ -n "$NEXT_STAGE" ] && [ "$NEXT_STAGE" != "COMPLETE" ]; then
+  # Advance workflow
+  node .claude/skills/workflow-state-manager.js update currentStage "$NEXT_STAGE"
+  node .claude/skills/workflow-state-manager.js update status in_progress
   
-  # Log agent invocation
-  log_audit "Agent Invoked" "InProgress" "$NEXT_STAGE Agent starting"
-  
-  # Invoke next agent
-  invoke_stage_agent "$NEXT_STAGE" "$STORY_ID"
+  # Invoke agent
+  invoke_agent "$NEXT_STAGE" "$STORY_ID"
 fi
 ```
 
-**Agent Invocation by Stage**:
+**Agent Invocation Pattern** (all stages):
 
 ```javascript
-// Requirements → Architecture
 Agent({
-  description: "Architecture stage for {STORY_ID}",
-  prompt: "You are the Architecture Agent. Read .artifacts/{STORY_ID}-requirements.md and follow .claude/agents/architecture-agent.md to create .artifacts/{STORY_ID}-architecture.md"
-})
+  description: `${stageName} stage for ${storyId}`,
+  subagent_type: `${stageName}-agent`,
+  prompt: `You are the ${stageName} Agent for Agentic SDLC.
 
-// Architecture → Planning
-Agent({
-  description: "Planning stage for {STORY_ID}",
-  prompt: "You are the Planning Agent. Read .artifacts/{STORY_ID}-architecture.md and follow .claude/agents/planning-agent.md to create .artifacts/{STORY_ID}-implementation-plan.md"
-})
+Story ID: ${storyId}
+Current Stage: ${stageName}
 
-// Planning → Implementation
-Agent({
-  description: "Implementation stage for {STORY_ID}",
-  prompt: "You are the Implementation Agent. Read .artifacts/{STORY_ID}-implementation-plan.md and follow .claude/agents/implementation-agent.md to implement code and create .artifacts/{STORY_ID}-implementation-summary.md"
-})
+State Management:
+- Use: const sm = require('./.claude/state/StateManager');
+- Workflow: .claude/state/workflows/${storyId}.json
+- Read previous artifacts from workflow.stages
 
-// Implementation → Review
-Agent({
-  description: "Review stage for {STORY_ID}",
-  prompt: "You are the Review Agent. Read .artifacts/{STORY_ID}-implementation-summary.md and review the implementation following .claude/agents/review-agent.md to create .artifacts/{STORY_ID}-review-report.md"
-})
+Previous artifacts available:
+${JSON.stringify(getPreviousArtifacts(workflow, stageName), null, 2)}
 
-// Review → Verification
-Agent({
-  description: "Verification stage for {STORY_ID}",
-  prompt: "You are the Verification Agent. Read .artifacts/{STORY_ID}-review-report.md and verify all criteria following .claude/agents/verification-agent.md to create .artifacts/{STORY_ID}-verification-report.md"
-})
+Your task: Follow .claude/agents/${stageName}-agent.md
 
-// Verification → PR
-Agent({
-  description: "PR stage for {STORY_ID}",
-  prompt: "You are the PR Agent. Read .artifacts/{STORY_ID}-verification-report.md and all prior artifacts following .claude/agents/pr-agent.md to create .artifacts/{STORY_ID}-pr-package.md"
+Output: docs/workflows/${storyId}/${stageName}.md
+
+After completion, update state:
+await sm.updateStage('${storyId}', '${stageName}', {
+  status: 'draft',
+  artifact: 'docs/workflows/${storyId}/${stageName}.md',
+  summary: 'Brief summary',
+  generatedAt: new Date().toISOString()
+});`
 })
 ```
 
@@ -216,17 +258,21 @@ validate_artifact_exists "$NEXT_STAGE" "$STORY_ID"
 validate_artifact_complete "$NEXT_STAGE" "$STORY_ID"
 ```
 
-### Step 11: Update Workflow State with Artifact
+### Step 11: Verify Next Stage Completion
 
-```json
-{
-  ...
-  "status": "WaitingForApproval",
-  "lastUpdatedAt": "{ISO_TIMESTAMP}",
-  "artifacts": {
-    ...
-    "{next_stage_key}": ".artifacts/{STORY_ID}-{next-stage}.md"
-  }
+**Agent should have updated the stage status to 'draft':**
+```javascript
+// Refresh workflow state
+const updatedWorkflow = await sm.getWorkflow(storyId);
+const nextStageData = updatedWorkflow.stages[nextStage];
+
+if (nextStageData.status !== 'draft') {
+  console.warn(`Warning: ${nextStage} stage status is ${nextStageData.status}, expected draft`);
+}
+
+// Verify artifact exists
+if (!nextStageData.artifact) {
+  throw new Error(`${nextStage} artifact not set in state`);
 }
 ```
 
@@ -272,17 +318,27 @@ Available Commands:
 
 ### Step 8B: If Workflow Complete
 
+```javascript
+if (!nextStage) {
+  // Mark workflow as completed
+  await sm.updateWorkflow(storyId, {
+    status: 'completed'
+  });
+  
+  // Optionally archive
+  // await sm.archiveWorkflow(storyId);
+  
+  console.log('✨ Workflow Complete!');
+}
+```
+
+**CLI:**
 ```bash
 if [ "$NEXT_STAGE" == "COMPLETE" ]; then
-  # Update final state
-  update_workflow_state "status" "Completed"
-  update_workflow_state "lastUpdatedAt" "$(date -Iseconds)"
+  # Mark complete
+  node .claude/skills/workflow-state-manager.js update status completed
   
-  # Log completion
-  log_audit "Workflow Completed" "Success" "All stages approved and completed"
-  
-  # Display completion message
-  display_workflow_complete
+  echo "✨ Workflow Complete!"
 fi
 ```
 
@@ -318,19 +374,20 @@ Workflow Duration: {DURATION}
 ## Post-conditions
 
 ### If Next Stage Invoked:
-- ✅ Current stage added to approvedStages
-- ✅ Workflow state updated to InProgress then WaitingForApproval
-- ✅ Next stage agent invoked
-- ✅ Next artifact generated
-- ✅ Audit log updated
+- ✅ Current stage status set to 'completed'
+- ✅ Workflow currentStage advanced to next stage
+- ✅ Next stage status set to 'in_progress'
+- ✅ Next stage agent invoked with StateManager context
+- ✅ Agent updates stage to 'draft' with artifact path
+- ✅ Workflow status remains 'in_progress' (or 'pending' for approval)
 - ✅ User presented with next approval gate
 
 ### If Workflow Completed:
-- ✅ Workflow status set to Completed
-- ✅ All 7 stages approved
-- ✅ All artifacts generated
-- ✅ PR package ready
-- ✅ Audit trail complete
+- ✅ Workflow status set to 'completed'
+- ✅ All 7 stages status = 'completed'
+- ✅ All artifacts in docs/workflows/{id}/
+- ✅ PR created and documented
+- ✅ Ready for archival via sm.archiveWorkflow()
 
 ## Error Handling
 

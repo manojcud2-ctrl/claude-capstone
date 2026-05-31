@@ -12,7 +12,13 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(uvx mcp-atlassian *)",
-      "Bash(grep -v \":0$\")"
+      "Bash(grep -v \":0$\")",
+      "Bash(chmod +x *)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(npm test *)",
+      "Read(//c/Users/manoj_thangaraj/Desktop/Learning/**)",
+      "Bash(ls -la .artifacts/)"
     ]
   }
 }

@@ -131,51 +131,133 @@ Each stage:
 
 ## State Management
 
-### Workflow State File
+### File-Per-Workflow Architecture
 
-**Location**: `.artifacts/workflow-state.json`
+**StateManager Location**: `.claude/state/StateManager.js`
 
-**Schema**:
+**Workflow Files**: `.claude/state/workflows/{storyId}.json`
+
+**Index File**: `.claude/state/index.json` (active workflows only)
+
+**Usage**:
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+// Get active workflow
+const storyId = await sm.getActiveStory();
+const workflow = await sm.getWorkflow(storyId);
+
+// Update workflow
+await sm.updateWorkflow(storyId, { 
+  currentStage: 'architecture',
+  status: 'in_progress' 
+});
+
+// Update specific stage
+await sm.updateStage(storyId, 'requirements', {
+  status: 'completed',
+  artifact: 'docs/workflows/WA-123/requirements.md',
+  approvedAt: new Date().toISOString()
+});
+```
+
+**CLI Tool**: `.claude/skills/workflow-state-manager.js`
+```bash
+# Initialize workflow
+node .claude/skills/workflow-state-manager.js init WA-123 "Title" Feature
+
+# Set active workflow
+node .claude/skills/workflow-state-manager.js set-active WA-123
+
+# Read state
+node .claude/skills/workflow-state-manager.js read currentStage
+
+# Update status
+node .claude/skills/workflow-state-manager.js update status in_progress
+
+# Show progress
+node .claude/skills/workflow-state-manager.js progress
+```
+
+**Schema** (per workflow file):
 ```json
 {
-  "version": "1.0",
-  "storyId": "WA-123",
+  "jiraStoryId": "WA-123",
+  "currentStage": "planning",
+  "status": "in_progress",
+  "createdAt": "2026-05-31T10:00:00Z",
+  "lastUpdated": "2026-05-31T12:30:00Z",
   "storyTitle": "Story Title",
   "storyType": "Feature",
-  "currentStage": "Planning",
-  "status": "WaitingForApproval",
-  "approvedStages": ["Requirements", "Architecture"],
-  "startedAt": "2026-05-31T10:00:00Z",
-  "lastUpdatedAt": "2026-05-31T12:30:00Z",
-  "artifacts": {
-    "requirements": ".artifacts/WA-123-requirements.md",
-    "architecture": ".artifacts/WA-123-architecture.md",
-    "plan": ".artifacts/WA-123-implementation-plan.md",
-    "implementation": null,
-    "review": null,
-    "verification": null,
-    "pr": null
-  },
-  "branch": "feature/WA-123-description"
+  "stages": {
+    "requirements": {
+      "status": "completed",
+      "artifact": "docs/workflows/WA-123/requirements.md",
+      "comments": [],
+      "generatedAt": "2026-05-31T10:15:00Z",
+      "approvedAt": "2026-05-31T10:30:00Z",
+      "summary": "Requirements approved"
+    },
+    "architecture": { "status": "completed", ... },
+    "planning": { "status": "in_progress", ... },
+    "implementation": { "status": "pending", ... },
+    "review": { "status": "pending", ... },
+    "verification": { "status": "pending", ... },
+    "pr": { "status": "pending", ... }
+  }
 }
 ```
 
 ### State Updates
 
-Update state after every:
-- Stage invocation
-- Stage completion
-- Approval decision
-- Rejection decision
-- Error occurrence
+Use StateManager API for all state operations:
+
+```javascript
+// After stage invocation
+await sm.updateWorkflow(storyId, { status: 'in_progress' });
+
+// After stage completion
+await sm.updateStage(storyId, stageName, {
+  status: 'draft',
+  artifact: artifactPath,
+  generatedAt: new Date().toISOString(),
+  summary: 'Stage complete, awaiting approval'
+});
+
+// After approval
+await sm.updateStage(storyId, stageName, {
+  status: 'completed',
+  approvedAt: new Date().toISOString()
+});
+await sm.updateWorkflow(storyId, {
+  currentStage: nextStage,
+  status: 'in_progress'
+});
+
+// After rejection
+await sm.updateStage(storyId, stageName, {
+  comments: [...existingComments, rejectionReason]
+});
+// currentStage stays the same
+
+// On error
+await sm.updateWorkflow(storyId, { status: 'failed' });
+```
 
 ### State Validation
 
-Before each operation, verify:
-- State file exists and is readable
-- State is valid JSON
-- Required fields present
-- Current stage is valid
+Use StateManager's built-in validation:
+```bash
+node .claude/skills/workflow-state-manager.js validate WA-123
+```
+
+Or programmatically:
+```javascript
+const workflow = await sm.getWorkflow(storyId);
+if (!workflow) throw new Error('Workflow not found');
+if (!workflow.currentStage) throw new Error('Invalid state');
+```
 
 ## Audit Trail
 
@@ -230,23 +312,48 @@ Create log entry for:
 
 ### Invoke Specialized Agent
 
-```
+```javascript
+// Before invocation - update state
+await sm.updateWorkflow(storyId, { 
+  currentStage: stageName,
+  status: 'in_progress' 
+});
+
+// Invoke agent
 Agent({
-  description: "{Stage} stage for {story}",
-  subagent_type: "general-purpose",
-  prompt: "You are the {Stage} Agent. {Agent role and instructions}.
+  description: `${stageName} stage for ${storyId}`,
+  subagent_type: `${stageName}-agent`,
+  prompt: `You are the ${stageName} Agent for Agentic SDLC.
   
-  Story ID: {storyId}
+  Story ID: ${storyId}
+  Current Stage: ${stageName}
   
-  Input: {input artifact path or story details}
+  State Management:
+  - Use StateManager to read/update workflow state
+  - Location: .claude/state/workflows/${storyId}.json
+  - API: const sm = require('./.claude/state/StateManager');
+  
+  Input artifacts: ${JSON.stringify(inputArtifacts)}
   
   Your task:
-  {Specific instructions for this stage}
+  ${stageInstructions}
   
-  Output: Create .artifacts/{storyId}-{stage}.md with {description}
+  Output: Create docs/workflows/${storyId}/${stageName}.md
   
-  Follow the agent definition in .claude/agents/{stage}-agent.md"
-})
+  After completion:
+  1. Update stage status via StateManager:
+     await sm.updateStage('${storyId}', '${stageName}', {
+       status: 'draft',
+       artifact: 'docs/workflows/${storyId}/${stageName}.md',
+       generatedAt: new Date().toISOString(),
+       summary: 'Brief summary here'
+     });
+  
+  Follow: .claude/agents/${stageName}-agent.md`
+});
+
+// After completion - workflow will be in status: 'in_progress'
+// Orchestrator will display artifact and pause for approval
 ```
 
 ### Wait for Completion

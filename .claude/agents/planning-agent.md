@@ -13,8 +13,9 @@ Transform the architecture specification into a detailed, actionable implementat
 
 ## Input
 
-- **Architecture Artifact**: `.artifacts/{storyId}-architecture.md`
-- **Requirements Artifact**: `.artifacts/{storyId}-requirements.md`
+- **Architecture Artifact**: `docs/workflows/{storyId}/architecture.md` (from previous stage)
+- **Requirements Artifact**: `docs/workflows/{storyId}/requirements.md` (from StateManager)
+- **Workflow State**: Read from StateManager to get context
 
 ## Responsibilities
 
@@ -346,9 +347,71 @@ Implementation is complete when:
 
 ## Output Artifact
 
-**File**: `.artifacts/{storyId}-implementation-plan.md`
+**File**: `docs/workflows/{storyId}/impl-plan.md`
 
 This artifact will be used as input to the Implementation Agent.
+
+## State Management
+
+This agent uses StateManager API for workflow state tracking.
+
+### Read Previous Stage Artifacts
+
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+// Get workflow and previous stages
+const workflow = await sm.getWorkflow(storyId);
+const requirementsDoc = workflow.stages.requirements.artifact;
+const architectureDoc = workflow.stages.architecture.artifact;
+
+// Read both artifacts
+const requirements = await fs.promises.readFile(requirementsDoc, 'utf8');
+const architecture = await fs.promises.readFile(architectureDoc, 'utf8');
+```
+
+### Update Stage Status
+
+**When starting work:**
+```javascript
+await sm.updateStage(storyId, 'planning', {
+  status: 'in_progress',
+  generatedAt: new Date().toISOString()
+});
+```
+
+**When artifact is created:**
+```javascript
+await sm.updateStage(storyId, 'planning', {
+  status: 'draft',
+  artifact: `docs/workflows/${storyId}/impl-plan.md`,
+  summary: `Created ${taskCount} tasks, estimated ${effort}, identified ${dependencyCount} dependencies`,
+  generatedAt: new Date().toISOString()
+});
+```
+
+**On error:**
+```javascript
+await sm.updateStage(storyId, 'planning', {
+  status: 'failed',
+  comments: [...existingComments, errorMessage]
+});
+```
+
+### CLI Alternative
+
+```bash
+# Set active workflow
+node .claude/skills/workflow-state-manager.js set-active ${STORY_ID}
+
+# Get previous artifacts
+REQ_PATH=$(node .claude/skills/workflow-state-manager.js read stages.requirements.artifact | jq -r '.')
+ARCH_PATH=$(node .claude/skills/workflow-state-manager.js read stages.architecture.artifact | jq -r '.')
+
+# Update stage when complete
+node .claude/skills/workflow-state-manager.js update-stage ${STORY_ID} planning '{"status":"draft","artifact":"docs/workflows/'${STORY_ID}'/impl-plan.md","summary":"Plan created with X tasks"}'
+```
 
 ## Validation
 

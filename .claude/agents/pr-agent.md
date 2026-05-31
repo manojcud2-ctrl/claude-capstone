@@ -13,11 +13,13 @@ Generate a comprehensive pull request package including description, changelog, 
 
 ## Input
 
-- **Verification Report**: `.artifacts/{storyId}-verification-report.md`
-- **Implementation Summary**: `.artifacts/{storyId}-implementation-summary.md`
-- **Review Report**: `.artifacts/{storyId}-review-report.md`
-- **Requirements Specification**: `.artifacts/{storyId}-requirements.md`
-- **Architecture Specification**: `.artifacts/{storyId}-architecture.md`
+- **Verification Report**: `docs/workflows/{storyId}/verification-report.md` (from previous stage)
+- **Implementation Report**: `docs/workflows/{storyId}/implementation-report.md` (from StateManager)
+- **Review Report**: `docs/workflows/{storyId}/review-report.md` (from StateManager)
+- **Requirements Specification**: `docs/workflows/{storyId}/requirements.md` (from StateManager)
+- **Architecture Specification**: `docs/workflows/{storyId}/architecture.md` (from StateManager)
+- **All Stage Artifacts**: Read from StateManager to create comprehensive PR
+- **Workflow State**: Read from StateManager to get complete context
 
 ## Responsibilities
 
@@ -489,9 +491,94 @@ No post-merge actions required.
 
 ## Output Artifact
 
-**File**: `.artifacts/{storyId}-pr-package.md`
+**File**: `docs/workflows/{storyId}/pr-description.md`
 
 This artifact contains all information needed to create the pull request.
+
+## State Management
+
+This agent uses StateManager API for workflow state tracking.
+
+### Read All Previous Stage Artifacts
+
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+// Get workflow and ALL stages
+const workflow = await sm.getWorkflow(storyId);
+const allStages = workflow.stages;
+
+// Read all artifacts to create comprehensive PR
+const artifacts = {
+  requirements: await fs.promises.readFile(allStages.requirements.artifact, 'utf8'),
+  architecture: await fs.promises.readFile(allStages.architecture.artifact, 'utf8'),
+  planning: await fs.promises.readFile(allStages.planning.artifact, 'utf8'),
+  implementation: await fs.promises.readFile(allStages.implementation.artifact, 'utf8'),
+  review: await fs.promises.readFile(allStages.review.artifact, 'utf8'),
+  verification: await fs.promises.readFile(allStages.verification.artifact, 'utf8')
+};
+
+// Get workflow metadata
+const storyTitle = workflow.storyTitle;
+const storyType = workflow.storyType;
+```
+
+### Update Stage Status
+
+**When starting work:**
+```javascript
+await sm.updateStage(storyId, 'pr', {
+  status: 'in_progress',
+  generatedAt: new Date().toISOString()
+});
+```
+
+**When PR is created:**
+```javascript
+await sm.updateStage(storyId, 'pr', {
+  status: 'completed',
+  artifact: `docs/workflows/${storyId}/pr-description.md`,
+  summary: `PR created: ${prUrl}`,
+  generatedAt: new Date().toISOString(),
+  approvedAt: new Date().toISOString()
+});
+
+// Also update workflow with PR info
+await sm.updateWorkflow(storyId, {
+  prUrl: prUrl,
+  prNumber: prNumber,
+  status: 'completed'
+});
+```
+
+**On error:**
+```javascript
+await sm.updateStage(storyId, 'pr', {
+  status: 'failed',
+  comments: [...existingComments, errorMessage]
+});
+```
+
+### CLI Alternative
+
+```bash
+# Set active workflow
+node .claude/skills/workflow-state-manager.js set-active ${STORY_ID}
+
+# Get all artifacts
+for stage in requirements architecture planning implementation review verification; do
+  echo "Reading ${stage}..."
+  path=$(node .claude/skills/workflow-state-manager.js read stages.${stage}.artifact | jq -r '.')
+  cat "$path"
+done
+
+# Update stage when PR created
+node .claude/skills/workflow-state-manager.js update-stage ${STORY_ID} pr '{"status":"completed","artifact":"docs/workflows/'${STORY_ID}'/pr-description.md","summary":"PR created: '${PR_URL}'"}'
+
+# Mark workflow complete
+node .claude/skills/workflow-state-manager.js update status completed
+```
 
 ## Step 10: Request Approval Before PR Creation
 

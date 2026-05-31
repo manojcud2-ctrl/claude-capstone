@@ -220,9 +220,48 @@ Then {expected result}
 
 ## Output Artifact
 
-**File**: `.artifacts/{storyId}-requirements.md`
+**File**: `docs/workflows/{storyId}/requirements.md`
 
 This artifact will be used as input to the Architecture Agent.
+
+## State Management
+
+This agent uses StateManager API for workflow state tracking.
+
+### Update Stage Status
+
+**When starting work:**
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+await sm.updateStage(storyId, 'requirements', {
+  status: 'in_progress',
+  generatedAt: new Date().toISOString()
+});
+```
+
+**When artifact is created:**
+```javascript
+await sm.updateStage(storyId, 'requirements', {
+  status: 'draft',
+  artifact: `docs/workflows/${storyId}/requirements.md`,
+  summary: `Extracted ${businessReqCount} business requirements, ${functionalReqCount} functional requirements, ${acceptanceCriteriaCount} acceptance criteria`,
+  generatedAt: new Date().toISOString()
+});
+```
+
+**CLI Alternative:**
+```bash
+# Set active workflow
+node .claude/skills/workflow-state-manager.js set-active ${STORY_ID}
+
+# Update status
+node .claude/skills/workflow-state-manager.js update status in_progress
+
+# Update stage when complete
+node .claude/skills/workflow-state-manager.js update-stage ${STORY_ID} requirements '{"status":"draft","artifact":"docs/workflows/'${STORY_ID}'/requirements.md","summary":"Requirements extracted"}'
+```
 
 ## Validation
 

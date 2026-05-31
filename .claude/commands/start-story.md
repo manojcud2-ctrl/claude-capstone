@@ -29,9 +29,10 @@ start story <jira-id>
 
 ## Pre-conditions
 
-- No existing workflow for this story ID (check `.artifacts/workflow-state.json`)
+- No existing workflow for this story ID (check via StateManager)
 - User has necessary permissions
 - Jira story exists (or user can provide manual input)
+- StateManager initialized (`.claude/state/` directory)
 
 ## Process
 
@@ -48,51 +49,68 @@ fi
 
 ### Step 2: Check for Existing Workflow
 
+**Using StateManager API:**
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+// Check if workflow exists
+const existing = await sm.getWorkflow(STORY_ID);
+if (existing) {
+  console.error(`Error: Workflow already exists for ${STORY_ID}`);
+  console.log("Use 'status' to check progress or 'resume' to continue");
+  process.exit(1);
+}
+```
+
+**Using CLI Tool:**
 ```bash
-# Check if workflow already exists
-if [ -f ".artifacts/workflow-state.json" ]; then
-  EXISTING_ID=$(jq -r '.storyId' .artifacts/workflow-state.json)
-  if [ "$EXISTING_ID" == "$STORY_ID" ]; then
-    echo "Error: Workflow already exists for $STORY_ID"
-    echo "Use 'status' to check progress or 'resume' to continue"
-    exit 1
-  fi
+# Check if workflow exists
+if node .claude/skills/workflow-state-manager.js read 2>/dev/null | grep -q "$STORY_ID"; then
+  echo "Error: Workflow already exists for $STORY_ID"
+  echo "Use 'status' to check progress"
+  exit 1
 fi
 ```
 
-### Step 3: Create Artifacts Directory
+### Step 3: Create Workflow Directories
 
 ```bash
-mkdir -p .artifacts
+# StateManager creates these automatically, but can pre-create
+mkdir -p docs/workflows/${STORY_ID}
+mkdir -p .artifacts  # For audit logs
 ```
 
 ### Step 4: Initialize Workflow State
 
-Create `.artifacts/workflow-state.json`:
+**Using StateManager API:**
+```javascript
+// Create workflow with StateManager
+const workflow = await sm.createWorkflow(STORY_ID, 'requirements');
 
-```json
-{
-  "version": "1.0",
-  "storyId": "{STORY_ID}",
-  "storyTitle": "",
-  "storyType": "",
-  "currentStage": "Requirements",
-  "status": "InProgress",
-  "approvedStages": [],
-  "startedAt": "{ISO_TIMESTAMP}",
-  "lastUpdatedAt": "{ISO_TIMESTAMP}",
-  "artifacts": {
-    "requirements": null,
-    "architecture": null,
-    "plan": null,
-    "implementation": null,
-    "review": null,
-    "verification": null,
-    "pr": null
-  },
-  "branch": null
-}
+// Update with story details
+await sm.updateWorkflow(STORY_ID, {
+  storyTitle: STORY_TITLE,
+  storyType: STORY_TYPE
+});
+
+// Set as active workflow
+await sm.setActiveStory(STORY_ID);
 ```
+
+**Using CLI Tool:**
+```bash
+# Initialize workflow
+node .claude/skills/workflow-state-manager.js init "$STORY_ID" "$STORY_TITLE" "$STORY_TYPE"
+
+# Set as active
+node .claude/skills/workflow-state-manager.js set-active "$STORY_ID"
+```
+
+**Created structure:**
+- `.claude/state/workflows/${STORY_ID}.json` - Workflow state
+- `.claude/state/index.json` - Active workflows index
+- `docs/workflows/${STORY_ID}/` - Artifact directory
 
 ### Step 5: Initialize Audit Log
 
@@ -151,10 +169,19 @@ Append to `.artifacts/audit-log.md`:
 
 ### Step 8: Invoke Requirements Agent
 
+**Update state before invocation:**
+```javascript
+await sm.updateStage(STORY_ID, 'requirements', {
+  status: 'in_progress',
+  generatedAt: new Date().toISOString()
+});
+```
+
+**Invoke agent:**
 ```javascript
 Agent({
-  description: "Requirements stage for {STORY_ID}",
-  subagent_type: "general-purpose",
+  description: `Requirements stage for ${STORY_ID}`,
+  subagent_type: "requirements-agent",
   prompt: `You are the Requirements Agent for the Agentic SDLC workflow.
 
 Story ID: ${STORY_ID}
@@ -167,11 +194,24 @@ ${STORY_DESCRIPTION}
 Acceptance Criteria:
 ${STORY_ACCEPTANCE_CRITERIA}
 
+State Management:
+- Use StateManager: const sm = require('./.claude/state/StateManager');
+- Workflow state: .claude/state/workflows/${STORY_ID}.json
+- Update stage status as you progress
+
 Your task: Extract and document comprehensive requirements.
 
 Follow the instructions in .claude/agents/requirements-agent.md
 
-Output: Create .artifacts/${STORY_ID}-requirements.md with complete requirements specification.`
+Output: Create docs/workflows/${STORY_ID}/requirements.md
+
+After completion, update state:
+await sm.updateStage('${STORY_ID}', 'requirements', {
+  status: 'draft',
+  artifact: 'docs/workflows/${STORY_ID}/requirements.md',
+  summary: 'Brief summary of requirements',
+  generatedAt: new Date().toISOString()
+});`
 })
 ```
 
@@ -196,14 +236,17 @@ Monitor agent execution until complete or failed.
 ### Step 11: Validate Requirements Artifact
 
 ```bash
+# Get artifact path from state
+ARTIFACT_PATH=$(node .claude/skills/workflow-state-manager.js read stages.requirements.artifact | jq -r '.')
+
 # Check artifact created
-if [ ! -f ".artifacts/${STORY_ID}-requirements.md" ]; then
-  echo "Error: Requirements artifact not created"
+if [ ! -f "$ARTIFACT_PATH" ]; then
+  echo "Error: Requirements artifact not created at $ARTIFACT_PATH"
   exit 1
 fi
 
 # Check artifact not empty
-if [ ! -s ".artifacts/${STORY_ID}-requirements.md" ]; then
+if [ ! -s "$ARTIFACT_PATH" ]; then
   echo "Error: Requirements artifact is empty"
   exit 1
 fi
@@ -211,7 +254,7 @@ fi
 # Check required sections present
 REQUIRED_SECTIONS=("Business Requirements" "Functional Requirements" "Acceptance Criteria")
 for section in "${REQUIRED_SECTIONS[@]}"; do
-  if ! grep -q "## $section" ".artifacts/${STORY_ID}-requirements.md"; then
+  if ! grep -q "## $section" "$ARTIFACT_PATH"; then
     echo "Warning: Missing section: $section"
   fi
 done
@@ -219,20 +262,29 @@ done
 
 ### Step 12: Update Workflow State
 
-Update `.artifacts/workflow-state.json`:
+**The agent should have already updated the state to 'draft'. Verify and set to waiting:**
 
-```json
-{
-  ...
-  "storyTitle": "{FETCHED_TITLE}",
-  "storyType": "{FETCHED_TYPE}",
-  "status": "WaitingForApproval",
-  "lastUpdatedAt": "{ISO_TIMESTAMP}",
-  "artifacts": {
-    "requirements": ".artifacts/{STORY_ID}-requirements.md",
-    ...
-  }
+```javascript
+// Verify stage status
+const workflow = await sm.getWorkflow(STORY_ID);
+if (workflow.stages.requirements.status !== 'draft') {
+  throw new Error('Requirements stage not marked as draft');
 }
+
+// Set workflow to waiting for approval
+await sm.updateWorkflow(STORY_ID, {
+  status: 'pending'  // or 'waiting_for_approval' depending on convention
+});
+```
+
+**Using CLI:**
+```bash
+# Verify stage complete
+STATUS=$(node .claude/skills/workflow-state-manager.js read stages.requirements.status | jq -r '.')
+if [ "$STATUS" != "draft" ]; then
+  echo "Error: Requirements not complete (status: $STATUS)"
+  exit 1
+fi
 ```
 
 ### Step 13: Log Agent Completion
@@ -252,25 +304,25 @@ Append to `.artifacts/audit-log.md`:
 
 ### Step 14: Display Requirements Summary
 
+**Read summary from state:**
+```javascript
+const workflow = await sm.getWorkflow(STORY_ID);
+const reqStage = workflow.stages.requirements;
+```
+
+**Display:**
 ```
 ✅ Requirements Stage Complete
 
 Story: {STORY_ID} - {TITLE}
 
 Artifact Generated:
-.artifacts/{STORY_ID}-requirements.md
+docs/workflows/{STORY_ID}/requirements.md
 
 Summary:
-- {Count} Business Requirements identified
-- {Count} Functional Requirements defined
-- {Count} Non-Functional Requirements specified
-- {Count} Acceptance Criteria created
-- {Count} Open Questions flagged
+{reqStage.summary}
 
-Key Highlights:
-- {Highlight 1}
-- {Highlight 2}
-- {Highlight 3}
+Generated: {reqStage.generatedAt}
 
 ⏸ Workflow Paused - Awaiting Approval
 
@@ -279,6 +331,9 @@ Available Commands:
 - "reject [reason]" - Request changes to requirements
 - "view requirements" - Display full requirements artifact
 - "status" - View workflow progress
+
+Check state:
+  node .claude/skills/workflow-state-manager.js progress {STORY_ID}
 ```
 
 ### Step 15: Wait for Approval
@@ -291,12 +346,13 @@ Workflow pauses at approval gate. Orchestrator waits for user command:
 
 ## Post-conditions
 
-- ✅ `.artifacts/` directory created
-- ✅ `workflow-state.json` initialized
-- ✅ `audit-log.md` initialized
-- ✅ Requirements artifact generated
-- ✅ Workflow state = WaitingForApproval
-- ✅ Current stage = Requirements
+- ✅ `.claude/state/workflows/${STORY_ID}.json` created (workflow state)
+- ✅ `.claude/state/index.json` updated (active workflow)
+- ✅ `docs/workflows/${STORY_ID}/` directory created
+- ✅ `docs/workflows/${STORY_ID}/requirements.md` generated
+- ✅ `.artifacts/audit-log.md` initialized
+- ✅ Workflow status = pending (awaiting approval)
+- ✅ Current stage = requirements, status = draft
 - ✅ User informed and awaiting approval decision
 
 ## Error Handling
@@ -346,32 +402,37 @@ Workflow pauses at approval gate. Orchestrator waits for user command:
 User: "start story WA-123"
 
 Orchestrator:
-[Creates .artifacts/]
-[Initializes workflow-state.json]
+[Initializes StateManager]
+[Creates workflow via sm.createWorkflow('WA-123')]
+[Sets as active via sm.setActiveStory('WA-123')]
+[Creates docs/workflows/WA-123/ directory]
 [Initializes audit-log.md]
 [Fetches WA-123 details from Jira]
-[Invokes Requirements Agent]
-[Waits for agent completion]
+[Updates stage status to in_progress]
+[Invokes Requirements Agent with StateManager context]
+[Agent creates docs/workflows/WA-123/requirements.md]
+[Agent updates stage to draft with summary]
 [Validates artifact]
-[Updates state]
+[Sets workflow to pending approval]
 
 Output:
 ✅ Requirements Stage Complete
 
 Story: WA-123 - Add weather forecast endpoint
 
-Artifact: .artifacts/WA-123-requirements.md
+Artifact: docs/workflows/WA-123/requirements.md
 
 Summary:
-- 3 Business Requirements identified
-- 8 Functional Requirements defined
-- 5 Non-Functional Requirements specified
-- 6 Acceptance Criteria created
-- 2 Open Questions flagged
+Extracted 3 business requirements, 8 functional requirements, 6 acceptance criteria
+
+Generated: 2026-05-31T15:30:00.000Z
 
 ⏸ Workflow Paused - Awaiting Approval
 
 Commands: approve | reject | view requirements | status
+
+Check progress:
+  node .claude/skills/workflow-state-manager.js progress WA-123
 ```
 
 ---

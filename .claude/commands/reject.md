@@ -32,31 +32,47 @@ reject requirements - missing performance criteria
 
 ## Pre-conditions
 
-- Workflow state file exists (`.artifacts/workflow-state.json`)
-- Workflow status is `WaitingForApproval`
+- Workflow exists in StateManager (`.claude/state/workflows/{storyId}.json`)
+- Current stage status is `draft` (awaiting approval)
 - User has reviewed current artifact and identified issues
 
 ## Process
 
 ### Step 1: Read Workflow State
 
-```bash
-cat .artifacts/workflow-state.json
+**Using StateManager API:**
+```javascript
+const StateManager = require('./.claude/state/StateManager');
+const sm = new StateManager();
+
+// Get active workflow
+const storyId = await sm.getActiveStory();
+const workflow = await sm.getWorkflow(storyId);
+const currentStage = workflow.currentStage;
+const stageStatus = workflow.stages[currentStage].status;
+const artifact = workflow.stages[currentStage].artifact;
 ```
 
-Parse:
-- `storyId`
-- `currentStage`
-- `status`
-- Current artifact path
-
-### Step 2: Validate Workflow Status
-
+**Using CLI:**
 ```bash
-if [ "$STATUS" != "WaitingForApproval" ]; then
-  echo "Error: Workflow is not waiting for approval"
-  echo "Current status: $STATUS"
-  echo "Nothing to reject"
+STORY_ID=$(node .claude/skills/workflow-state-manager.js read | jq -r '.jiraStoryId')
+CURRENT_STAGE=$(node .claude/skills/workflow-state-manager.js read currentStage | jq -r '.')
+STAGE_STATUS=$(node .claude/skills/workflow-state-manager.js read stages.${CURRENT_STAGE}.status | jq -r '.')
+ARTIFACT=$(node .claude/skills/workflow-state-manager.js read stages.${CURRENT_STAGE}.artifact | jq -r '.')
+```
+
+### Step 2: Validate Stage Status
+
+```javascript
+if (stageStatus !== 'draft') {
+  throw new Error(`Cannot reject ${currentStage}. Status is ${stageStatus}, expected draft`);
+}
+```
+
+**CLI:**
+```bash
+if [ "$STAGE_STATUS" != "draft" ]; then
+  echo "Error: Cannot reject. Stage status is $STAGE_STATUS (expected draft)"
   exit 1
 fi
 ```
@@ -74,18 +90,30 @@ if [ -z "$REASON" ]; then
 fi
 ```
 
-### Step 4: Update Workflow State
+### Step 4: Add Rejection Comment to Stage
 
-**Keep at current stage**, but update timestamp:
+**Using StateManager API:**
+```javascript
+// Add rejection comment to stage
+const existingComments = workflow.stages[currentStage].comments || [];
+await sm.updateStage(storyId, currentStage, {
+  comments: [...existingComments, {
+    type: 'rejection',
+    reason: REASON,
+    timestamp: new Date().toISOString()
+  }]
+});
 
-```json
-{
-  ...
-  "status": "WaitingForApproval",
-  "lastUpdatedAt": "{ISO_TIMESTAMP}"
-  // Note: currentStage stays the same
-  // Note: approvedStages does NOT include current stage
-}
+// Note: stage status stays 'draft'
+// Note: currentStage stays the same
+// Note: stage is NOT marked as 'completed'
+```
+
+**Using CLI:**
+```bash
+# Add comment via custom script or note in audit log
+# State manager CLI doesn't directly support comment arrays yet
+echo "Rejection: $REASON ($(date -Iseconds))" >> ".artifacts/audit-log.md"
 ```
 
 ### Step 5: Log Rejection
@@ -112,14 +140,14 @@ Append to `.artifacts/audit-log.md`:
 
 Reason: {REASON}
 
-Artifact: .artifacts/{STORY_ID}-{current-stage}.md
+Artifact: docs/workflows/{STORY_ID}/{current-stage}.md
 
 Status: Workflow remains at {CURRENT_STAGE} stage
 
 Options to Fix:
 
 1️⃣ Edit Manually:
-   - Open: .artifacts/{STORY_ID}-{current-stage}.md
+   - Open: docs/workflows/{STORY_ID}/{current-stage}.md
    - Make required changes
    - Save the file
    - Run: approve
@@ -308,7 +336,7 @@ All rejections logged in audit trail:
 User: "reject - missing API rate limiting requirements"
 
 Orchestrator:
-[Reads workflow-state.json - currentStage: Requirements]
+[Reads workflow state via StateManager - currentStage: requirements]
 [Logs rejection with reason]
 [Keeps stage at Requirements]
 
@@ -317,10 +345,10 @@ Output:
 
 Reason: missing API rate limiting requirements
 
-Artifact: .artifacts/WA-123-requirements.md
+Artifact: docs/workflows/WA-123/requirements.md
 
 Options to Fix:
-1. Edit .artifacts/WA-123-requirements.md manually
+1. Edit docs/workflows/WA-123/requirements.md manually
 2. Run: retry requirements
 3. Run: view requirements
 
@@ -353,11 +381,11 @@ Reason: Database schema is not defined
 ### After Fix and Re-approval
 
 ```
-User: [edits .artifacts/WA-123-architecture.md]
+User: [edits docs/workflows/WA-123/architecture.md]
 User: "approve"
 
 Orchestrator:
-[Reads workflow-state.json - currentStage: Architecture]
+[Reads workflow state via StateManager - currentStage: architecture]
 [Validates artifact]
 [Proceeds to Planning]
 
@@ -375,7 +403,7 @@ Output:
 **Status**: Rejected
 **Rejected By**: User
 **Reason**: Database schema is not defined
-**Artifact**: .artifacts/WA-123-architecture.md
+**Artifact**: docs/workflows/WA-123/architecture.md
 **Details**: Stage rejected, awaiting corrections
 
 ---
@@ -393,7 +421,7 @@ Output:
 **Action**: Stage Approved
 **Status**: Success
 **Approved By**: User
-**Artifact**: .artifacts/WA-123-architecture.md
+**Artifact**: docs/workflows/WA-123/architecture.md
 **Next Stage**: Planning
 
 ---
