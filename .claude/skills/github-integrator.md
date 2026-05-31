@@ -307,20 +307,17 @@ Settings:
 
 ### GitHub MCP Server Setup
 
-If using GitHub MCP server, add to your MCP configuration:
+If using GitHub MCP server with Claude Code, register it at user scope:
 
-```json
-{
-  "mcpServers": {
-    "github": {
-      "command": "mcp-server-github",
-      "args": [],
-      "env": {
-        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
-      }
-    }
-  }
-}
+```powershell
+$env:GITHUB_PERSONAL_ACCESS_TOKEN = "YOUR_TOKEN_HERE"
+claude mcp add-json github --scope user "{\"type\":\"http\",\"url\":\"https://api.githubcopilot.com/mcp\",\"headers\":{\"Authorization\":\"Bearer $env:GITHUB_PERSONAL_ACCESS_TOKEN\"}}"
+```
+
+Then verify with:
+
+```powershell
+claude mcp list
 ```
 
 ### MCP Tool Mapping
