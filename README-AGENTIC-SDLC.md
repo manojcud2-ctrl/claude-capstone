@@ -10,11 +10,14 @@ This framework implements a master orchestrator pattern for software delivery, w
 
 ✅ **Human-in-the-Loop** - Mandatory approval gates after each stage  
 ✅ **Specialized Agents** - Each stage handled by focused, expert agent  
+✅ **MCP Integration** - Native GitHub and Jira integration via Model Context Protocol  
+✅ **Reusable Skills** - 8 modular skills for code generation, testing, and workflow management  
 ✅ **State Management** - Complete workflow state tracking  
 ✅ **Audit Trail** - Full history of all actions and decisions  
 ✅ **Artifact-Driven** - Each stage produces structured documentation  
 ✅ **Extensible** - Easy to add new stages or customize agents  
 ✅ **Production-Ready** - Comprehensive error handling and validation  
+✅ **Automated PR Creation** - Automatically creates GitHub pull requests with complete documentation  
 
 ## Architecture
 
