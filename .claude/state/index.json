@@ -1,6 +1,13 @@
 {
   "version": 2,
-  "activeStoryId": null,
-  "lastUpdated": "2026-05-31T10:04:46.675Z",
-  "activeWorkflows": []
+  "activeStoryId": "WA-47",
+  "lastUpdated": "2026-05-31T13:27:04.153Z",
+  "activeWorkflows": [
+    {
+      "jiraStoryId": "WA-47",
+      "currentStage": "requirements",
+      "status": "in_progress",
+      "lastUpdated": "2026-05-31T13:27:04.149Z"
+    }
+  ]
 }

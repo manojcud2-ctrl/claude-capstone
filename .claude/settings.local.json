@@ -18,7 +18,8 @@
       "Bash(npm install *)",
       "Bash(npm test *)",
       "Read(//c/Users/manoj_thangaraj/Desktop/Learning/**)",
-      "Bash(ls -la .artifacts/)"
+      "Bash(ls -la .artifacts/)",
+      "Bash(node *)"
     ]
   }
 }

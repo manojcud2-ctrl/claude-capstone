@@ -1,0 +1,74 @@
+{
+  "jiraStoryId": "WA-47",
+  "currentStage": "requirements",
+  "status": "in_progress",
+  "createdAt": "2026-05-31T12:28:03.787Z",
+  "lastUpdated": "2026-05-31T13:27:04.149Z",
+  "stages": {
+    "requirements": {
+      "status": "completed",
+      "artifact": "docs/workflows/WA-47/requirements.md",
+      "comments": [],
+      "generatedAt": "2026-05-31T12:31:10.687Z",
+      "approvedAt": "2026-05-31T12:45:00.000Z",
+      "summary": "Requirements approved - FR-1 and FR-2 defined",
+      "approvedBy": "user"
+    },
+    "architecture": {
+      "status": "pending",
+      "artifact": null,
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": null,
+      "summary": ""
+    },
+    "planning": {
+      "status": "completed",
+      "artifact": "docs/workflows/WA-47/implementation-plan.md",
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": "2026-05-31T14:15:00.000Z",
+      "summary": "Implementation plan approved - 9 tasks, traditional approach",
+      "approvedBy": "user"
+    },
+    "implementation": {
+      "status": "completed",
+      "artifact": "docs/workflows/WA-47/implementation-summary.md",
+      "comments": [],
+      "generatedAt": "2026-05-31T12:58:25.000Z",
+      "approvedAt": "2026-05-31T15:30:00.000Z",
+      "summary": "Implementation approved with case-sensitive matching",
+      "approvedBy": "user"
+    },
+    "review": {
+      "status": "completed",
+      "artifact": "docs/workflows/WA-47/review-report.md",
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": "2026-05-31T15:45:00.000Z",
+      "summary": "Review approved - case-sensitive approach confirmed by user",
+      "approvedBy": "user"
+    },
+    "verification": {
+      "status": "completed",
+      "artifact": "docs/workflows/WA-47/verification-report.md",
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": "2026-05-31T16:00:00.000Z",
+      "summary": "Verification passed - all tests passing, ready for PR",
+      "approvedBy": "user"
+    },
+    "pr": {
+      "status": "completed",
+      "artifact": "docs/workflows/WA-47/pr-package.md",
+      "comments": [],
+      "generatedAt": null,
+      "approvedAt": "2026-05-31T16:15:00.000Z",
+      "summary": "PR package created, branch pushed to remote",
+      "approvedBy": "user"
+    }
+  },
+  "storyTitle": "TBD",
+  "storyType": "TBD",
+  "WA-47": "status"
+}

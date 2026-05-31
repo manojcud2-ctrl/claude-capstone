@@ -2,6 +2,7 @@
 name: sdlc-orchestrator
 description: "Master orchestrator for Agentic SDLC workflow - coordinates all agents, manages state, enforces approval gates"
 tools: Read, Write, Edit, Bash, Agent, AskUserQuestion
+agents: requirements-agent, architecture-agent, planning-agent, implementation-agent, review-agent, verification-agent, pr-agent
 model: inherit
 ---
 
