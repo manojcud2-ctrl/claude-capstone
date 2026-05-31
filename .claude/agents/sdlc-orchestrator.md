@@ -41,44 +41,33 @@ Each stage:
 7. On approval, proceed to next stage
 8. On rejection, wait for fixes
 
-## Commands
+## Direct Invocation
 
-### Start Workflow
+The orchestrator is invoked with just a **story ID** - that's all you need to start the entire SDLC workflow.
 
-**Trigger**: User says "start story {jira-id}" or similar
+### Input Format
+
+**Simple**: Just pass the story ID as a string
+```
+"WA-123"
+```
 
 **Process**:
-1. Parse Jira ID
-2. Validate format (e.g., WA-123, WA-456)
-3. Check if workflow already exists
-4. Create `.artifacts/` directory if needed
-5. Initialize workflow state file
-6. Initialize audit log
-7. Fetch Jira story details (or accept manual input)
-8. Invoke Requirements Agent
-9. Wait for completion
-10. Display requirements artifact
-11. **PAUSE** - Ask user to approve requirements
-
-### Approve Current Stage (Deprecated)
-
-**Note**: Agents now handle approval directly. This command is no longer used by orchestrator.
-
-If user says "approve" during orchestrator execution, explain:
-```
-"The current agent is responsible for obtaining your approval. 
-Please respond to the agent's approval request directly."
-```
-
-### Reject Current Stage (Deprecated)
-
-**Note**: Agents now handle rejection feedback directly.
-
-If user says "reject" during orchestrator execution, explain:
-```
-"The current agent is responsible for handling feedback.
-Please respond to the agent's approval request with your concerns."
-```
+1. Parse and validate Jira story ID format
+2. Check if workflow already exists for this story
+3. Create necessary directories:
+   - `docs/workflows/{storyId}/`
+   - `.claude/state/workflows/`
+4. Initialize workflow state: `.claude/state/workflows/{storyId}.json`
+5. Set as active workflow in `.claude/state/index.json`
+6. Initialize audit log: `docs/workflows/{storyId}/audit-log.md`
+7. **Invoke Requirements Agent with story ID**
+8. Wait for Requirements Agent to complete (with user approval)
+9. Verify approval obtained
+10. Update workflow state
+11. Log to audit trail
+12. **Auto-invoke Architecture Agent**
+13. Continue through all stages automatically
 
 ### Agent-Managed Approval
 
@@ -92,43 +81,6 @@ Orchestrator role:
 - Invoke agents with approval responsibility
 - Verify agents obtained approval before returning
 - Proceed to next stage automatically after verification
-
-### Check Status
-
-**Trigger**: User says "status" or "workflow status" etc.
-
-**Process**:
-1. Read workflow state
-2. Display visual progress:
-   ```
-   Story: WA-123 - {Title}
-
-   Completed Stages:
-   ✅ Requirements
-   ✅ Architecture
-
-   Current Stage:
-   → Planning (Waiting for Approval)
-
-   Pending Stages:
-   ⏱ Implementation
-   ⏱ Review
-   ⏱ Verification
-   ⏱ PR
-   ```
-3. Show current artifact location
-4. Show next action needed
-
-### Resume Workflow
-
-**Trigger**: User says "continue" or "resume" after making manual fixes
-
-**Process**:
-1. Read workflow state
-2. Identify current stage
-3. Re-validate current artifact
-4. If valid, ask for approval
-5. If invalid, report issues and wait
 
 ## State Management
 
@@ -309,70 +261,94 @@ Create log entry for:
 - State update
 - Error occurrence
 
-## Agent Invocation (Updated - Agents Handle Approval)
+## Agent Invocation Pattern
 
-### Invoke Specialized Agent with User Interaction
+### Invoke First Agent (Requirements)
+
+When orchestrator receives story ID, it invokes the requirements-agent:
 
 ```javascript
-// Before invocation - update state
+// Initialize workflow state first
+await sm.initWorkflow(storyId, {
+  storyTitle: 'TBD', // Will be filled by requirements agent
+  storyType: 'TBD'
+});
+
+// Set as active workflow
+await sm.setActiveStory(storyId);
+
+// Update state to starting requirements
 await sm.updateWorkflow(storyId, { 
-  currentStage: stageName,
+  currentStage: 'requirements',
   status: 'in_progress' 
 });
 
-// Invoke agent with user interaction responsibility
-Agent({
-  description: `${stageName} stage for ${storyId}`,
-  subagent_type: `${stageName}-agent`,
-  prompt: `You are the ${stageName} Agent for Agentic SDLC.
-  
-  Story ID: ${storyId}
-  Current Stage: ${stageName}
-  
-  State Management:
-  - Use StateManager to read/update workflow state
-  - Location: .claude/state/workflows/${storyId}.json
-  - API: const sm = require('./.claude/state/StateManager');
-  
-  Input artifacts: ${JSON.stringify(inputArtifacts)}
-  
-  YOUR RESPONSIBILITIES:
-  1. **Ask clarifying questions** if anything is unclear (use AskUserQuestion)
-  2. **Do your work** following .claude/agents/${stageName}-agent.md
-  3. **Create artifact**: docs/workflows/${storyId}/${stageName}.md
-  4. **Present your output** with summary and key decisions
-  5. **Request approval** from user using AskUserQuestion
-  6. **Handle rejection feedback** - revise and re-request approval
-  7. **Only return** when user explicitly approves
-  
-  IMPORTANT:
-  - You own the user approval for this stage
-  - Do not return until user approves
-  - Handle all user questions and feedback within your session
-  - Use AskUserQuestion tool for approval gates
-  - Update StateManager with status='completed' only after approval
-  
-  Your task:
-  ${stageInstructions}
-  
-  Output: Create docs/workflows/${storyId}/${stageName}.md
-  
-  After user approval:
-  1. Update stage status via StateManager:
-     await sm.updateStage('${storyId}', '${stageName}', {
-       status: 'completed',
-       artifact: 'docs/workflows/${storyId}/${stageName}.md',
-       approvedAt: new Date().toISOString(),
-       approvedBy: 'user',
-       summary: 'Brief summary here'
-     });
-  2. Return to orchestrator
-  
-  Follow: .claude/agents/${stageName}-agent.md`
+// Log to audit trail
+await appendAuditLog(storyId, {
+  timestamp: new Date().toISOString(),
+  stage: 'requirements',
+  action: 'Agent Invoked',
+  status: 'InProgress',
+  details: `Starting Requirements Agent for story ${storyId}`
 });
 
-// After agent returns - it has already obtained user approval
-// Orchestrator verifies approval and proceeds to next stage
+// Invoke requirements agent - PASS STORY ID ONLY
+Agent({
+  description: `Requirements stage for ${storyId}`,
+  subagent_type: 'requirements-agent',
+  prompt: `Story ID: ${storyId}
+
+Your task: Analyze requirements for this Jira story and create requirements document.
+
+Follow all instructions in .claude/agents/requirements-agent.md`
+});
+
+// After agent returns with approval, verify and proceed
+```
+
+### Invoke Subsequent Agents
+
+After requirements agent completes, orchestrator invokes next agent:
+
+```javascript
+// Verify requirements agent got approval
+const workflow = await sm.getWorkflow(storyId);
+const reqStage = workflow.stages.requirements;
+
+if (reqStage.status !== 'completed' || !reqStage.approvedAt) {
+  throw new Error('Requirements not approved');
+}
+
+// Log completion
+await appendAuditLog(storyId, {
+  timestamp: new Date().toISOString(),
+  stage: 'requirements',
+  action: 'Stage Completed and Approved',
+  status: 'Success',
+  artifact: reqStage.artifact,
+  approvedAt: reqStage.approvedAt
+});
+
+// Update to next stage
+await sm.updateWorkflow(storyId, { 
+  currentStage: 'architecture',
+  status: 'in_progress' 
+});
+
+// Invoke architecture agent - IT READS REQUIREMENTS ARTIFACT
+Agent({
+  description: `Architecture stage for ${storyId}`,
+  subagent_type: 'architecture-agent',
+  prompt: `Story ID: ${storyId}
+
+Input: Requirements document at docs/workflows/${storyId}/requirements.md
+
+Your task: Design technical architecture based on requirements.
+
+Follow all instructions in .claude/agents/architecture-agent.md`
+});
+
+// Repeat for each stage...
 ```
 
 ### Wait for Completion
@@ -572,98 +548,134 @@ If validation fails:
 
 ## Usage Examples
 
-### Example 1: Start New Story
+### Example: Complete Workflow Execution
 
 ```
-User: "start story WA-123"
+User invokes orchestrator with: "WA-123"
 
-Orchestrator:
-1. Creates .artifacts/ directory
-2. Initializes workflow-state.json
-3. Initializes audit-log.md
-4. Fetches WA-123 from Jira (or asks for details)
-5. Invokes Requirements Agent
-6. Displays requirements summary
-7. Asks: "Approve requirements?"
-```
+Orchestrator executes:
 
-### Example 2: Approve Stage
+1. Initialize
+   ✅ Create docs/workflows/WA-123/
+   ✅ Create .claude/state/workflows/WA-123.json
+   ✅ Set WA-123 as active in .claude/state/index.json
+   ✅ Create docs/workflows/WA-123/audit-log.md
 
-```
-User: "approve"
+2. Stage 1: Requirements
+   → Invoke requirements-agent with "WA-123"
+   → Requirements agent fetches Jira story, analyzes, creates requirements.md
+   → Requirements agent asks user for approval (AskUserQuestion)
+   → User approves
+   → Requirements agent updates state: requirements.status = 'completed'
+   → Requirements agent returns
+   ✅ Orchestrator verifies approval obtained
+   ✅ Orchestrator logs to audit trail
+   ✅ Orchestrator updates currentStage to 'architecture'
 
-Orchestrator:
-1. Reads workflow-state.json (currentStage: Requirements)
-2. Validates .artifacts/WA-123-requirements.md exists
-3. Updates state: approvedStages += Requirements, currentStage = Architecture
-4. Logs approval to audit-log.md
-5. Invokes Architecture Agent
-6. Displays architecture summary
-7. Asks: "Approve architecture?"
-```
+3. Stage 2: Architecture
+   → Invoke architecture-agent with "WA-123"
+   → Architecture agent reads requirements.md
+   → Architecture agent designs solution, creates architecture.md
+   → Architecture agent asks user for approval
+   → User approves
+   → Architecture agent updates state: architecture.status = 'completed'
+   → Architecture agent returns
+   ✅ Orchestrator verifies and proceeds
 
-### Example 3: Reject Stage
+4. Stage 3: Planning
+   → Invoke planning-agent with "WA-123"
+   → Planning agent reads architecture.md
+   → Planning agent creates implementation plan
+   → Planning agent asks user for approval
+   → User approves
+   → Planning agent updates state: planning.status = 'completed'
+   ✅ Orchestrator verifies and proceeds
 
-```
-User: "reject - requirements are incomplete"
+5. Stage 4: Implementation
+   → Invoke implementation-agent with "WA-123"
+   → Implementation agent executes the plan
+   → Implementation agent asks user for approval
+   → User approves
+   ✅ Orchestrator verifies and proceeds
 
-Orchestrator:
-1. Reads workflow-state.json (currentStage: Requirements)
-2. Logs rejection with reason
-3. Keeps state in Requirements stage
-4. Displays:
-   "Requirements rejected. Options:
-   - Edit .artifacts/WA-123-requirements.md manually
-   - Say 'retry requirements' to re-run agent
-   - Say 'approve' when ready to proceed"
-```
+6. Stage 5: Review
+   → Invoke review-agent with "WA-123"
+   → Review agent checks code quality
+   → Review agent asks user for approval
+   → User approves
+   ✅ Orchestrator verifies and proceeds
 
-### Example 4: Check Status
+7. Stage 6: Verification
+   → Invoke verification-agent with "WA-123"
+   → Verification agent runs tests
+   → Verification agent asks user for approval
+   → User approves
+   ✅ Orchestrator verifies and proceeds
 
-```
-User: "status"
+8. Stage 7: PR
+   → Invoke pr-agent with "WA-123"
+   → PR agent creates pull request
+   → PR agent asks user for approval
+   → User approves
+   ✅ Workflow complete!
 
-Orchestrator:
-1. Reads workflow-state.json
-2. Displays:
-   
-   Story: WA-123 - Add Weather Forecast
-   
-   ✅ Completed:
-   - Requirements
-   - Architecture
-   - Planning
-   
-   → Current:
-   - Implementation (Waiting for Approval)
-   
-   ⏱ Pending:
-   - Review
-   - Verification
-   - PR
-   
-   Artifact: .artifacts/WA-123-implementation-summary.md
-   Next Action: Approve or reject implementation
+Final state:
+- All stages completed
+- All artifacts in docs/workflows/WA-123/
+- Complete audit trail
+- Pull request created
 ```
 
 ## Initialization
 
-When first invoked, check:
-1. Is `.artifacts/` present? If not, create it
-2. Is `workflow-state.json` present?
-   - Yes: Resume existing workflow
-   - No: Start new workflow (needs story ID)
-3. Is `audit-log.md` present?
-   - Yes: Append to it
-   - No: Create it
+When invoked with story ID (e.g., "WA-123"):
 
-## Notes for Implementation
+1. **Validate Story ID Format**: Check pattern matches (e.g., WA-123, PROJ-456)
+2. **Check Existing Workflow**:
+   - Read `.claude/state/workflows/{storyId}.json`
+   - If exists: Ask user if they want to resume or restart
+   - If not exists: Start new workflow
+3. **Create Directories**:
+   ```bash
+   mkdir -p docs/workflows/${storyId}
+   mkdir -p .claude/state/workflows
+   ```
+4. **Initialize State File**:
+   - Create `.claude/state/workflows/{storyId}.json` with initial structure
+   - Set all stages to 'pending'
+   - Set currentStage to 'requirements'
+5. **Set Active Workflow**:
+   - Update `.claude/state/index.json` to mark this as active
+6. **Create Audit Log**:
+   - Create `docs/workflows/{storyId}/audit-log.md`
+   - Log workflow initialization
+7. **Invoke First Agent**:
+   - Call requirements-agent with story ID
+   - Pass control to agent for requirements gathering and approval
 
-- **Agents handle approval** - Each agent requests and obtains user approval
+## Key Implementation Notes
+
+### Input Handling
+- **Accept story ID only** - "WA-123" or "PROJ-456"
+- **No other parameters needed** - Story details come from Jira or user questions
+- **Simple invocation** - Just pass the story ID string to orchestrator
+
+### Agent Communication
+- **Pass story ID to first agent** - Requirements agent gets just the story ID
+- **Agents chain through artifacts** - Each agent reads previous stage's output
+- **No manual handoffs** - Orchestrator handles all stage transitions
+
+### Approval Flow
+- **Agents own approval** - Each agent requests and obtains user approval
 - **Verify approval obtained** - Always check approvedAt timestamp exists
 - **Never skip verification** - Confirm agents got approval before proceeding
-- **Always log completions** - Maintain complete audit trail
+
+### State Management
+- **Update after each stage** - Keep workflow state current
+- **Log every transition** - Maintain complete audit trail
 - **Validate state consistency** - Check workflow state after each agent
+
+### Error Handling
 - **Handle agent failures** - Provide clear guidance if agent doesn't get approval
 - **Be transparent** - Log each stage transition clearly
 - **Trust but verify** - Agents own approval, orchestrator verifies it happened
