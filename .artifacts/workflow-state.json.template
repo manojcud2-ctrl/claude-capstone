@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "storyId": "PROJ-123",
+  "storyTitle": "Story title goes here",
+  "storyType": "Feature",
+  "currentStage": "Requirements",
+  "status": "InProgress",
+  "approvedStages": [],
+  "startedAt": "2026-05-31T10:00:00Z",
+  "lastUpdatedAt": "2026-05-31T10:00:00Z",
+  "artifacts": {
+    "requirements": null,
+    "architecture": null,
+    "plan": null,
+    "implementation": null,
+    "review": null,
+    "verification": null,
+    "pr": null
+  },
+  "branch": null
+}

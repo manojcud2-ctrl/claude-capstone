@@ -1,0 +1,9 @@
+# Ignore all artifacts except templates
+*
+
+# Keep template files
+!.gitignore
+!*.template
+
+# Keep README if added
+!README.md

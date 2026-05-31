@@ -1,0 +1,60 @@
+# Audit Log - {Story ID}
+
+## {ISO Timestamp} - Workflow Initialization
+
+**Action**: Workflow Started
+**Status**: InProgress
+**Story ID**: {Story ID}
+**Initiated By**: User
+**Details**: Agentic SDLC workflow initialized
+
+---
+
+## {ISO Timestamp} - {Stage Name} Stage
+
+**Action**: Agent Invoked
+**Status**: InProgress
+**Details**: Starting {Stage Name} Agent for story {Story ID}
+
+---
+
+## {ISO Timestamp} - {Stage Name} Stage
+
+**Action**: Agent Completed
+**Status**: Success
+**Artifact**: .artifacts/{Story ID}-{stage-name}.md
+**Details**: {Stage Name} stage completed successfully
+
+---
+
+## {ISO Timestamp} - {Stage Name} Stage
+
+**Action**: Stage Approved
+**Status**: Success
+**Approved By**: User
+**Artifact**: .artifacts/{Story ID}-{stage-name}.md
+**Next Stage**: {Next Stage Name}
+
+---
+
+## {ISO Timestamp} - {Stage Name} Stage
+
+**Action**: Stage Rejected
+**Status**: Rejected
+**Rejected By**: User
+**Reason**: {Rejection reason}
+**Artifact**: .artifacts/{Story ID}-{stage-name}.md
+**Details**: Stage rejected, awaiting corrections
+
+---
+
+## {ISO Timestamp} - Workflow Completion
+
+**Action**: Workflow Completed
+**Status**: Success
+**Story ID**: {Story ID}
+**Completed By**: User
+**Total Duration**: {Duration}
+**Details**: All 7 stages completed and approved. PR package ready.
+
+---
