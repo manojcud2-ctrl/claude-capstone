@@ -10,7 +10,7 @@ This framework implements a master orchestrator pattern for software delivery, w
 
 ✅ **Human-in-the-Loop** - Mandatory approval gates after each stage  
 ✅ **Specialized Agents** - Each stage handled by focused, expert agent  
-✅ **MCP Integration** - Native GitHub and Jira integration via Model Context Protocol  
+✅ **MCP-Ready Integrations** - GitHub and Jira workflow surfaces designed to integrate via Model Context Protocol  
 ✅ **Reusable Skills** - 8 modular skills for code generation, testing, and workflow management  
 ✅ **State Management** - Complete workflow state tracking  
 ✅ **Audit Trail** - Full history of all actions and decisions  
@@ -96,6 +96,8 @@ The framework is already installed in this repository:
 
 .artifacts/              # Workflow artifacts (gitignored except templates)
 ```
+
+GitHub MCP still requires one local Claude user-level setup step before those tools are available in chat. Use [.artifacts/GITHUB-MCP-SETUP-CHECKLIST.md](.artifacts/GITHUB-MCP-SETUP-CHECKLIST.md) and export `GITHUB_PERSONAL_ACCESS_TOKEN` before running the helper script.
 
 ### Starting a Workflow
 

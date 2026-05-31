@@ -4,7 +4,10 @@
       "Bash(git *)",
       "Bash(codemie --version)",
       "Bash(gh api *)",
-      "Bash(env)"
+      "Bash(env)",
+      "Skill(update-config)",
+      "mcp__github__get_me",
+      "mcp__github__search_repositories"
     ]
   }
 }
