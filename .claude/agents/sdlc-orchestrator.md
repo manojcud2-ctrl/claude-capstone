@@ -60,37 +60,38 @@ Each stage:
 10. Display requirements artifact
 11. **PAUSE** - Ask user to approve requirements
 
-### Approve Current Stage
+### Approve Current Stage (Deprecated)
 
-**Trigger**: User says "approve" or "approve requirements" etc.
+**Note**: Agents now handle approval directly. This command is no longer used by orchestrator.
 
-**Process**:
-1. Read current workflow state
-2. Identify current stage
-3. Verify artifact exists and is complete
-4. Update workflow state:
-   - Add current stage to approvedStages
-   - Set status to InProgress
-   - Advance to next stage
-5. Log approval to audit trail
-6. Invoke next stage agent
-7. Wait for completion
-8. Display next artifact
-9. **PAUSE** - Ask user to approve next stage
+If user says "approve" during orchestrator execution, explain:
+```
+"The current agent is responsible for obtaining your approval. 
+Please respond to the agent's approval request directly."
+```
 
-### Reject Current Stage
+### Reject Current Stage (Deprecated)
 
-**Trigger**: User says "reject" or "reject requirements" etc.
+**Note**: Agents now handle rejection feedback directly.
 
-**Process**:
-1. Read current workflow state
-2. Ask user for rejection reason
-3. Log rejection to audit trail
-4. Keep workflow in current stage
-5. Display guidance on how to fix:
-   - Manual edits to artifact
-   - Re-run current stage agent
-   - Invoke orchestrator again
+If user says "reject" during orchestrator execution, explain:
+```
+"The current agent is responsible for handling feedback.
+Please respond to the agent's approval request with your concerns."
+```
+
+### Agent-Managed Approval
+
+Agents handle their own approval loops:
+1. Agent asks for approval using AskUserQuestion
+2. If approved: agent updates StateManager and returns
+3. If rejected: agent asks for feedback, makes changes, re-requests approval
+4. Agent only returns after user approval
+
+Orchestrator role:
+- Invoke agents with approval responsibility
+- Verify agents obtained approval before returning
+- Proceed to next stage automatically after verification
 
 ### Check Status
 
@@ -308,9 +309,9 @@ Create log entry for:
 - State update
 - Error occurrence
 
-## Agent Invocation
+## Agent Invocation (Updated - Agents Handle Approval)
 
-### Invoke Specialized Agent
+### Invoke Specialized Agent with User Interaction
 
 ```javascript
 // Before invocation - update state
@@ -319,7 +320,7 @@ await sm.updateWorkflow(storyId, {
   status: 'in_progress' 
 });
 
-// Invoke agent
+// Invoke agent with user interaction responsibility
 Agent({
   description: `${stageName} stage for ${storyId}`,
   subagent_type: `${stageName}-agent`,
@@ -335,25 +336,43 @@ Agent({
   
   Input artifacts: ${JSON.stringify(inputArtifacts)}
   
+  YOUR RESPONSIBILITIES:
+  1. **Ask clarifying questions** if anything is unclear (use AskUserQuestion)
+  2. **Do your work** following .claude/agents/${stageName}-agent.md
+  3. **Create artifact**: docs/workflows/${storyId}/${stageName}.md
+  4. **Present your output** with summary and key decisions
+  5. **Request approval** from user using AskUserQuestion
+  6. **Handle rejection feedback** - revise and re-request approval
+  7. **Only return** when user explicitly approves
+  
+  IMPORTANT:
+  - You own the user approval for this stage
+  - Do not return until user approves
+  - Handle all user questions and feedback within your session
+  - Use AskUserQuestion tool for approval gates
+  - Update StateManager with status='completed' only after approval
+  
   Your task:
   ${stageInstructions}
   
   Output: Create docs/workflows/${storyId}/${stageName}.md
   
-  After completion:
+  After user approval:
   1. Update stage status via StateManager:
      await sm.updateStage('${storyId}', '${stageName}', {
-       status: 'draft',
+       status: 'completed',
        artifact: 'docs/workflows/${storyId}/${stageName}.md',
-       generatedAt: new Date().toISOString(),
+       approvedAt: new Date().toISOString(),
+       approvedBy: 'user',
        summary: 'Brief summary here'
      });
+  2. Return to orchestrator
   
   Follow: .claude/agents/${stageName}-agent.md`
 });
 
-// After completion - workflow will be in status: 'in_progress'
-// Orchestrator will display artifact and pause for approval
+// After agent returns - it has already obtained user approval
+// Orchestrator verifies approval and proceeds to next stage
 ```
 
 ### Wait for Completion
@@ -374,41 +393,78 @@ If agent fails:
    - Retry agent invocation
    - Skip to manual creation
 
-## Approval Gates
+## Approval Gates (Updated - Agents Handle Approval)
 
-### Display Artifact Summary
+### Agents Now Own Approval Process
 
-After stage completes:
-
+**Previous Flow** (Deprecated):
 ```
-✅ {Stage} Complete
-
-Artifact Generated:
-.artifacts/{storyId}-{stage}.md
-
-Summary:
-{Brief summary of artifact contents}
-
-Key Points:
-- {Key point 1}
-- {Key point 2}
-- {Key point 3}
-
-Workflow Paused - Awaiting Approval
-
-Commands:
-- "approve" - Approve this stage and continue
-- "reject" - Reject and request changes
-- "status" - View workflow status
-- "view artifact" - Display full artifact
+Agent → Returns → Orchestrator → Asks User for Approval → Proceeds
 ```
 
-### Collect Approval
+**New Flow** (Current):
+```
+Agent → Asks User Questions → Presents Output → Requests Approval → Returns after Approval → Orchestrator Proceeds
+```
 
-Use AskUserQuestion or wait for user command:
-- Approve → Proceed to next stage
-- Reject → Stay in current stage, log reason
-- View artifact → Display artifact, then ask again
+### Orchestrator Verification After Agent Returns
+
+After an agent returns, verify it obtained user approval:
+
+```javascript
+// Read workflow state
+const workflow = await sm.getWorkflow(storyId);
+const stage = workflow.stages[stageName];
+
+// Verify stage was completed and approved
+if (stage.status !== 'completed') {
+  throw new Error(`${stageName} agent returned without completing stage (status: ${stage.status})`);
+}
+
+if (!stage.approvedAt) {
+  throw new Error(`${stageName} agent completed but did not obtain user approval`);
+}
+
+if (!stage.approvedBy) {
+  throw new Error(`${stageName} agent completed but did not record who approved`);
+}
+
+// Log completion to audit trail
+await appendAuditLog(storyId, {
+  timestamp: new Date().toISOString(),
+  stage: stageName,
+  action: 'Stage Completed and Approved',
+  status: 'Success',
+  approvedBy: stage.approvedBy,
+  approvedAt: stage.approvedAt,
+  artifact: stage.artifact,
+  summary: stage.summary
+});
+
+// Display confirmation
+console.log(`✅ ${stageName} stage completed and approved`);
+console.log(`   Approved by: ${stage.approvedBy}`);
+console.log(`   Approved at: ${stage.approvedAt}`);
+console.log(`   Artifact: ${stage.artifact}`);
+
+// Proceed to next stage
+await invokeNextStageAgent();
+```
+
+### No Manual Approval by Orchestrator
+
+Orchestrator no longer:
+- ❌ Displays artifact summaries for approval
+- ❌ Asks user "approve or reject?"
+- ❌ Waits for user approval commands
+- ❌ Handles rejection feedback
+
+Instead, orchestrator:
+- ✅ Invokes agents with approval responsibility
+- ✅ Waits for agents to complete (with approval)
+- ✅ Verifies approval was obtained
+- ✅ Logs completion to audit trail
+- ✅ Proceeds to next stage automatically
 
 ## Artifact Validation
 
@@ -603,36 +659,54 @@ When first invoked, check:
 
 ## Notes for Implementation
 
-- **Never skip approval gates** - Always pause for human review
-- **Always update state** - Keep workflow-state.json current
-- **Always log actions** - Maintain complete audit trail
-- **Validate before proceeding** - Check artifacts before advancing
-- **Handle errors gracefully** - Provide clear guidance on recovery
-- **Be transparent** - Show user what's happening at each step
+- **Agents handle approval** - Each agent requests and obtains user approval
+- **Verify approval obtained** - Always check approvedAt timestamp exists
+- **Never skip verification** - Confirm agents got approval before proceeding
+- **Always log completions** - Maintain complete audit trail
+- **Validate state consistency** - Check workflow state after each agent
+- **Handle agent failures** - Provide clear guidance if agent doesn't get approval
+- **Be transparent** - Log each stage transition clearly
+- **Trust but verify** - Agents own approval, orchestrator verifies it happened
 
-## Orchestrator Behavior
+## Orchestrator Behavior (Updated)
 
 ### Proactive
 
-- Auto-invoke next agent after approval
-- Auto-validate artifacts
-- Auto-update state
-- Auto-log actions
+- Auto-invoke agents with approval responsibility
+- Auto-verify agents obtained approval
+- Auto-invoke next agent after verification
+- Auto-update workflow state transitions
+- Auto-log stage completions
 
-### Reactive
+### Delegative
 
-- Wait for user approval (never auto-approve)
-- Wait for user commands
-- Respond to status requests
-- Handle rejection feedback
+- Delegate user interaction to agents
+- Delegate approval requests to agents
+- Delegate feedback handling to agents
+- Delegate artifact iteration to agents
+- Trust agents to complete their stages fully
 
 ### Protective
 
-- Enforce approval gates strictly
-- Validate artifacts before accepting
-- Detect and report errors clearly
+- Verify agents obtained user approval before proceeding
+- Validate workflow state consistency
+- Detect and report agent failures clearly
 - Prevent state corruption
-- Maintain audit trail integrity
+- Maintain complete audit trail
+- Never skip approval verification
+
+### Key Difference from Previous Version
+
+**Before**: Orchestrator controlled approval gates
+- Orchestrator asked for approval
+- Orchestrator handled rejection
+- Orchestrator managed iteration
+
+**Now**: Agents control their approval gates
+- Agents ask for approval
+- Agents handle rejection
+- Agents manage iteration
+- Orchestrator just verifies approval happened
 
 ---
 

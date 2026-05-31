@@ -1,7 +1,7 @@
 ---
 name: verification-agent
 description: "Verify acceptance criteria met, requirements covered, review findings addressed, and tests validate functionality"
-tools: Read, Bash
+tools: Read, Bash, AskUserQuestion
 model: inherit
 ---
 
@@ -635,3 +635,68 @@ If review critical issues unresolved:
 - If in doubt, mark FAILED and document concerns
 - Better to catch issues now than in production
 - The goal is confidence in what's being delivered
+
+## Final Step: Present Output & Request User Approval
+
+After verification, present results and request approval.
+
+### A. Display Summary
+
+```
+✅ Verification Complete
+
+📄 Verification Report: docs/workflows/${storyId}/verification-report.md
+
+📊 Verification Results:
+- Acceptance Criteria: {X passed / Y total}
+- Requirements Coverage: {percentage}%
+- Test Results: {All passing | X failures}
+- Manual Verification: {Complete | Pending}
+- Overall Status: {Pass | Fail with issues}
+
+✅ Verified:
+- {Criteria 1 with test evidence}
+- {Criteria 2 with test evidence}
+
+⚠️ Issues:
+- {Issue 1 if any}
+```
+
+### B. Request Approval
+
+```javascript
+await AskUserQuestion({
+  questions: [{
+    question: "Is the verification complete and acceptable?",
+    header: "Approval",
+    options: [
+      {
+        label: "Approve - Create PR",
+        description: "Verification passed, ready for pull request"
+      },
+      {
+        label: "Reject - More testing needed",
+        description: "Verification incomplete or issues found"
+      },
+      {
+        label: "View full report",
+        description: "Show complete verification report"
+      }
+    ],
+    multiSelect: false
+  }]
+});
+```
+
+### C. Handle Approval
+
+On approval:
+```javascript
+await sm.updateStage(storyId, "verification", {
+  status: "completed",
+  artifact: `docs/workflows/${storyId}/verification-report.md`,
+  approvedAt: new Date().toISOString(),
+  approvedBy: "user",
+  summary: `${passedCriteria}/${totalCriteria} acceptance criteria verified, approved`
+});
+```

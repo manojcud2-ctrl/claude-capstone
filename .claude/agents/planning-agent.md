@@ -1,7 +1,7 @@
 ---
 name: planning-agent
 description: "Break down architecture into actionable implementation tasks with estimates, dependencies, and sequencing"
-tools: Read
+tools: Read, AskUserQuestion
 model: inherit
 ---
 
@@ -93,7 +93,81 @@ Document:
 
 ### Step 9: Generate Implementation Plan Artifact
 
-Create `.artifacts/{storyId}-implementation-plan.md` with sequenced tasks.
+Create `docs/workflows/{storyId}/implementation-plan.md` with sequenced tasks.
+
+### Step 10: Present Output & Request User Approval
+
+#### A. Display Summary
+
+```
+✅ Implementation Plan Complete
+
+📄 Artifact Created: docs/workflows/{storyId}/implementation-plan.md
+
+📊 Plan Overview:
+- Total Tasks: {X} tasks across {Y} work streams
+- Estimated Effort: {Z} hours/days total
+- Critical Path: {Path description}
+- Parallel Opportunities: {Number} tasks can run in parallel
+
+📋 Task Breakdown by Stream:
+- Setup/Config: {X} tasks
+- Core Implementation: {Y} tasks
+- Integration: {Z} tasks
+- Testing: {A} tasks
+- Documentation: {B} tasks
+
+⚠️ High-Risk Tasks:
+- {Task name}: {Why risky, mitigation}
+
+🔗 Dependencies:
+- {X} blocking dependencies identified
+- {Y} parallel task groups
+```
+
+#### B. Request Approval
+
+```javascript
+await AskUserQuestion({
+  questions: [{
+    question: "Does this implementation plan match your expectations?",
+    header: "Approval",
+    options: [
+      {
+        label: "Approve - Start Implementation",
+        description: "Plan looks good, proceed with implementation"
+      },
+      {
+        label: "Reject - Needs changes",
+        description: "Plan needs adjustment"
+      },
+      {
+        label: "View full plan first",
+        description: "Show complete plan before deciding"
+      },
+      {
+        label: "Adjust priorities",
+        description: "Change task order or priorities"
+      }
+    ],
+    multiSelect: false
+  }]
+});
+```
+
+#### C. Handle Rejection & Approval
+
+Follow same pattern as other agents - handle feedback, make revisions, update StateManager on approval:
+
+```javascript
+await sm.updateStage(storyId, 'planning', {
+  status: 'completed',
+  artifact: `docs/workflows/${storyId}/implementation-plan.md`,
+  approvedAt: new Date().toISOString(),
+  approvedBy: 'user',
+  summary: `${taskCount} tasks planned, ${estimatedHours} hours estimated, approved`
+});
+```
 
 ## Output Format
 

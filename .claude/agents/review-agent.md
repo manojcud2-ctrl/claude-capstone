@@ -1,7 +1,7 @@
 ---
 name: review-agent
 description: "Review implementation for architecture compliance, code quality, test coverage, and maintainability"
-tools: Read, Bash, Grep, Glob
+tools: Read, Bash, Grep, Glob, AskUserQuestion
 model: inherit
 ---
 
@@ -577,3 +577,73 @@ If cannot access changed files:
 - Consider context - sometimes "imperfect" code is pragmatic
 - Balance thoroughness with practicality
 - Remember the goal is working, maintainable software
+
+## Final Step: Present Output & Request User Approval
+
+After completing code review, present findings and request approval.
+
+### A. Display Summary
+
+```
+✅ Code Review Complete
+
+📄 Review Report: docs/workflows/${storyId}/review-report.md
+
+📊 Review Summary:
+- Issues Found: {Critical: X, Major: Y, Minor: Z}
+- Code Quality: {Rating}/10
+- Test Coverage: {percentage}%
+- Security Concerns: {count}
+- Overall Decision: {Approve with concerns | Request changes | Reject}
+
+⚠️ Critical Issues:
+- {Issue 1 with location}
+- {Issue 2 with location}
+
+✅ Positive Findings:
+- {Good practice 1}
+- {Good practice 2}
+```
+
+### B. Request Approval
+
+```javascript
+await AskUserQuestion({
+  questions: [{
+    question: "Do you agree with this code review assessment?",
+    header: "Approval",
+    options: [
+      {
+        label: "Approve - Proceed to Verification",
+        description: "Review findings are acceptable, move to verification"
+      },
+      {
+        label: "Reject - Re-review needed",
+        description: "Review missed issues or has incorrect findings"
+      },
+      {
+        label: "View full report first",
+        description: "Show complete review report"
+      },
+      {
+        label: "Request changes in code",
+        description: "Code needs fixes before proceeding"
+      }
+    ],
+    multiSelect: false
+  }]
+});
+```
+
+### C. Handle Approval
+
+On approval:
+```javascript
+await sm.updateStage(storyId, "review", {
+  status: "completed",
+  artifact: `docs/workflows/${storyId}/review-report.md`,
+  approvedAt: new Date().toISOString(),
+  approvedBy: "user",
+  summary: `${criticalIssues} critical, ${majorIssues} major, ${minorIssues} minor issues found, approved`
+});
+```

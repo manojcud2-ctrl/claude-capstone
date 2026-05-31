@@ -1,7 +1,7 @@
 ---
 name: implementation-agent
 description: "Execute implementation plan by writing code, tests, and following repository conventions to deliver working software"
-tools: Read, Write, Edit, Bash, Grep, Glob
+tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion
 model: inherit
 ---
 
@@ -488,3 +488,74 @@ If convention unclear:
 - Commit frequently with clear messages
 - Document decisions and trade-offs
 - Think about future maintainers
+
+
+## Final Step: Present Output & Request User Approval
+
+After completing implementation, present work and request approval.
+
+### A. Display Summary
+
+```
+✅ Implementation Complete
+
+📄 Summary Document: docs/workflows/${storyId}/implementation-summary.md
+
+📊 Implementation Stats:
+- Files Changed: {X created, Y modified, Z deleted}
+- Tests Added: {Unit: X, Integration: Y, Functional: Z}
+- Code Coverage: {Current percentage}
+- All Tests Passing: {Yes/No}
+
+🔑 Key Changes:
+- {Major change 1 with file paths}
+- {Major change 2 with file paths}
+- {Major change 3 with file paths}
+
+⚠️ Notes:
+- {Any concerns, tech debt, or follow-ups needed}
+```
+
+### B. Request Approval
+
+```javascript
+await AskUserQuestion({
+  questions: [{
+    question: "Is the implementation complete and satisfactory?",
+    header: "Approval",
+    options: [
+      {
+        label: "Approve - Proceed to Review",
+        description: "Implementation looks good, move to code review"
+      },
+      {
+        label: "Reject - Needs changes",
+        description: "Implementation needs fixes or additions"
+      },
+      {
+        label: "View changes first",
+        description: "Show me git diff before deciding"
+      },
+      {
+        label: "Run tests first",
+        description: "Run test suite before approval"
+      }
+    ],
+    multiSelect: false
+  }]
+});
+```
+
+### C. Handle User Response and Update State
+
+On approval:
+```javascript
+await sm.updateStage(storyId, \"implementation\", {
+  status: \"completed\",
+  artifact: `docs/workflows/${storyId}/implementation-summary.md`,
+  approvedAt: new Date().toISOString(),
+  approvedBy: \"user\",
+  summary: `${filesChanged} files changed, ${testsAdded} tests added, approved`
+});
+```
+
