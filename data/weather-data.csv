@@ -1,0 +1,11 @@
+city,temperature,humidity,condition,wind_speed,pressure
+New York,72,65,Cloudy,12,1013
+Los Angeles,85,40,Sunny,8,1015
+Chicago,68,70,Rainy,18,1010
+Houston,88,75,Partly Cloudy,15,1012
+Phoenix,95,25,Sunny,10,1014
+Miami,82,80,Thunderstorm,22,1008
+Seattle,65,60,Rainy,14,1009
+Denver,70,30,Sunny,11,1016
+Boston,65,72,Cloudy,16,1012
+San Francisco,62,65,Foggy,8,1014

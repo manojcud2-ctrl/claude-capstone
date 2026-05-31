@@ -1,0 +1,23 @@
+{
+  "name": "weather-backend",
+  "version": "1.0.0",
+  "description": "Simple weather API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "test": "jest --coverage",
+    "test:unit": "jest test/unit",
+    "test:functional": "jest test/functional",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "csv-parse": "^5.4.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "supertest": "^6.3.3"
+  }
+}
