@@ -122,7 +122,7 @@ GET /api/condition?city=Chicago
 **Benefits:**
 - Minimal payload (67% smaller than full weather endpoint)
 - Faster response time for simple condition checks
-- Case-insensitive city name matching
+- **Note**: City name matching is case-sensitive (exact match required)
 
 ## Testing with cURL
 

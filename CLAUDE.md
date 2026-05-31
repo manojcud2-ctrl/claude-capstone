@@ -52,9 +52,9 @@ npx jest -t "should return health status" # Run test by name pattern
 - `GET /api/weather/:city` - Returns formatted weather data for a city (case-insensitive)
   - Returns 404 if city not found
   - Formats response with units (°F, %, mph, mb)
-- `GET /api/condition?city={name}` - Returns only weather condition for a city (case-insensitive)
+- `GET /api/condition?city={name}` - Returns only weather condition for a city (case-sensitive)
   - Returns 400 if city query parameter is missing
-  - Returns 404 if city not found
+  - Returns 404 if city not found or case doesn't match exactly
   - Minimal response payload (city and condition only)
 
 ### Test Structure
@@ -74,7 +74,7 @@ npx jest -t "should return health status" # Run test by name pattern
 **Functional Tests (`test/functional/condition.test.js`)**
 - Tests /api/condition endpoint with query parameters
 - Validates minimal response payload (city + condition only)
-- Tests case-insensitive matching and URL encoding
+- Tests case-sensitive matching and URL encoding
 - Verifies error handling for missing and invalid parameters
 
 ## Key Patterns
@@ -83,6 +83,7 @@ npx jest -t "should return health status" # Run test by name pattern
 - **Case Handling**: City searches are case-insensitive (converted to lowercase for comparison)
 - **Response Format**: Weather values include units in the response (e.g., "72°F", "65%")
 - **Query Parameters**: /api/condition uses query parameter pattern (?city={name}) vs path parameter pattern used by other endpoints
+- **Case Sensitivity**: /api/condition requires exact case match, while /api/weather/:city is case-insensitive
 - **Minimal Responses**: /api/condition returns only city and condition (67% payload reduction vs full weather data)
 - **Module Export**: Server exports the Express app for testing but only calls `listen()` when run directly (`require.main === module`)
 

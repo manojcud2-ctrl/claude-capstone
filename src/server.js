@@ -80,10 +80,9 @@ app.get('/api/condition', (req, res) => {
     });
   }
 
-  // Perform case-insensitive city lookup
-  const cityName = cityParam.toLowerCase();
+  // Perform case-sensitive city lookup
   const weather = weatherData.find(
-    (w) => w.city.toLowerCase() === cityName
+    (w) => w.city === cityParam
   );
 
   // Handle city not found

@@ -21,28 +21,19 @@ describe('GET /api/condition', () => {
       expect(response.headers['content-type']).toMatch(/application\/json/);
     });
 
-    test('should handle case-insensitive city names (lowercase)', async () => {
-      const response = await request(app).get('/api/condition?city=chicago');
+    test('should require exact case match for city names', async () => {
+      // Lowercase should not match
+      const response1 = await request(app).get('/api/condition?city=chicago');
+      expect(response1.status).toBe(404);
 
-      expect(response.status).toBe(200);
-      expect(response.body.city).toBe('Chicago');
-      expect(response.body.condition).toBeDefined();
-    });
+      // Uppercase should not match
+      const response2 = await request(app).get('/api/condition?city=CHICAGO');
+      expect(response2.status).toBe(404);
 
-    test('should handle case-insensitive city names (uppercase)', async () => {
-      const response = await request(app).get('/api/condition?city=CHICAGO');
-
-      expect(response.status).toBe(200);
-      expect(response.body.city).toBe('Chicago');
-      expect(response.body.condition).toBeDefined();
-    });
-
-    test('should handle case-insensitive city names (mixed case)', async () => {
-      const response = await request(app).get('/api/condition?city=ChIcAgO');
-
-      expect(response.status).toBe(200);
-      expect(response.body.city).toBe('Chicago');
-      expect(response.body.condition).toBeDefined();
+      // Exact case should match
+      const response3 = await request(app).get('/api/condition?city=Chicago');
+      expect(response3.status).toBe(200);
+      expect(response3.body.city).toBe('Chicago');
     });
 
     test('should handle URL-encoded city names with spaces', async () => {
@@ -66,12 +57,11 @@ describe('GET /api/condition', () => {
       });
     });
 
-    test('should preserve original city name capitalization', async () => {
-      const response = await request(app).get('/api/condition?city=new%20york');
+    test('should match exact city name capitalization', async () => {
+      const response = await request(app).get('/api/condition?city=New%20York');
 
       expect(response.status).toBe(200);
       expect(response.body.city).toBe('New York');
-      expect(response.body.city).not.toBe('new york');
     });
 
     test('should return valid weather condition from allowed list', async () => {
