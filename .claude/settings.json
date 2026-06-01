@@ -1,0 +1,6 @@
+{
+  "hooks": {
+    "afterEdit": "if [[ \"$FILE_PATH\" == src/* ]]; then npm test; fi",
+    "userPromptSubmit": "if [[ \"$PROMPT\" == *\"start story\"* ]]; then echo '🚀 Starting SDLC workflow...'; npm test; fi"
+  }
+}

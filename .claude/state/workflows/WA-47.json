@@ -15,11 +15,11 @@
       "approvedBy": "user"
     },
     "architecture": {
-      "status": "pending",
-      "artifact": null,
+      "status": "completed",
+      "artifact": "docs/workflows/WA-47/architecture.md",
       "comments": [],
-      "generatedAt": null,
-      "approvedAt": null,
+      "generatedAt": "2026-05-31T12:40:15.107Z",
+      "approvedAt": "2026-05-31T12:50:00.000Z",
       "summary": ""
     },
     "planning": {

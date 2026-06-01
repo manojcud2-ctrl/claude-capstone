@@ -89,9 +89,9 @@ gh auth status
 **Example**:
 ```bash
 github-integrator create-pr \
-  "feat: Add weather endpoint (WA-123)" \
-  "$(cat .artifacts/WA-123-pr-package.md)" \
-  "feature/WA-123-weather" \
+  "feat: Add weather endpoint (PMX-123)" \
+  "$(cat .artifacts/PMX-123-pr-package.md)" \
+  "feature/PMX-123-weather" \
   "main"
 ```
 
@@ -147,7 +147,7 @@ Method: GitHub MCP Server
 URL: https://github.com/owner/repo/pull/123
 Number: #123
 Status: Open
-Branch: feature/WA-123-weather → main
+Branch: feature/PMX-123-weather → main
 ```
 
 ### 2. Get Pull Request Info
@@ -165,10 +165,10 @@ github-integrator get-pr 123
 ```
 Pull Request #123
 
-Title: feat: Add weather endpoint (WA-123)
+Title: feat: Add weather endpoint (PMX-123)
 Author: user
 Status: open
-Base: main ← Head: feature/WA-123-weather
+Base: main ← Head: feature/PMX-123-weather
 Created: 2026-05-31T10:00:00Z
 Updated: 2026-05-31T15:30:00Z
 
@@ -207,7 +207,7 @@ Open Pull Requests (10)
 #124  fix: Handle null weather data         bugfix/null-check → main
       Created: 5 hours ago | bob
 
-#123  feat: Add weather endpoint            feature/WA-123-weather → main
+#123  feat: Add weather endpoint            feature/PMX-123-weather → main
       Created: 6 hours ago | user
       
 ...
